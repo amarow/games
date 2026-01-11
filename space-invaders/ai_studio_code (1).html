@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Retro Space Invaders - 1980 Edition</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            user-select: none; /* Verhindert Text-Markierung beim Klicken */
+        }
+
+        #gameContainer {
+            position: relative;
+            box-shadow: 0 0 20px rgba(51, 255, 0, 0.2);
+        }
+
+        canvas {
+            background-color: #000;
+            border: 4px solid #333;
+            display: block;
+        }
+
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .message-box {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #0f0;
+            padding: 20px;
+            text-align: center;
+            pointer-events: auto;
+            display: none;
+            min-width: 300px;
+        }
+
+        h1 { margin: 0 0 10px 0; color: #0f0; text-shadow: 2px 2px #000; }
+        p { color: #fff; font-size: 14px; margin: 5px 0; }
+        
+        .btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: 2px solid #ff0;
+            color: #ff0;
+            background: #000;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #ff0;
+            color: #000;
+        }
+        
+        /* Blink Animation */
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div id="gameContainer">
+    <canvas id="gameCanvas" width="600" height="700"></canvas>
+    <div class="scanlines"></div>
+    
+    <div id="ui-layer">
+        <!-- Start Screen -->
+        <div id="startScreen" class="message-box" style="display: block;">
+            <h1>SPACE INVADERS</h1>
+            <p>RETRO EDITION 1980</p>
+            <br>
+            <p>&#8592; / &#8594; Bewegen</p>
+            <p>LEERTASTE Feuern</p>
+            <br>
+            <div id="startBtn" class="btn blink">START GAME</div>
+        </div>
+        
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="message-box">
+            <h1 style="color:red">GAME OVER</h1>
+            <p id="finalScore">Punkte: 0</p>
+            <div id="restartBtn" class="btn blink">NEUSTART</div>
+        </div>
+
+        <!-- Level Screen -->
+        <div id="levelScreen" class="message-box">
+            <h1 id="levelTitle" style="color:cyan">LEVEL 1</h1>
+            <p>Bereit machen...</p>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="winScreen" class="message-box">
+            <h1 style="color:yellow">SIEG!</h1>
+            <p>Galaxie gerettet!</p>
+            <p id="winScore">Punkte: 0</p>
+            <div id="winRestartBtn" class="btn blink">NOCHMAL</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- SETUP & CONFIG ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // State Variables
+    let gameState = 'START'; 
+    let level = 1;
+    let score = 0;
+    let lives = 3;
+    let frames = 0;
+    let animationId;
+    let audioCtx = null; // AudioContext erst null, wird beim Start erstellt
+
+    // --- AUDIO SYSTEM (Browser-Safe) ---
+    function initAudio() {
+        if (!audioCtx) {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            } catch (e) {
+                console.warn("Audio konnte nicht initialisiert werden:", e);
+            }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playSound(type) {
+        if (!audioCtx) return; // Kein Sound, wenn nicht initialisiert
+
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'shoot') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'explosion') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.exponentialRampToValueAtTime(10, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'alien_move') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150 - (level * 10), now);
+                gain.gain.setValueAtTime(0.02, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        } catch (e) {
+            // Ignoriere Fehler bei schnellen Sounds
+        }
+    }
+
+    // --- INPUT HANDLING ---
+    const keys = { ArrowLeft: false, ArrowRight: false, Space: false };
+
+    window.addEventListener('keydown', (e) => {
+        if(e.code === 'ArrowLeft') keys.ArrowLeft = true;
+        if(e.code === 'ArrowRight') keys.ArrowRight = true;
+        if(e.code === 'Space') {
+            if (!keys.Space && gameState === 'PLAYING') player.shoot();
+            keys.Space = true;
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if(e.code === 'ArrowLeft') keys.ArrowLeft = false;
+        if(e.code === 'ArrowRight') keys.ArrowRight = false;
+        if(e.code === 'Space') keys.Space = false;
+    });
+
+    // --- GAME OBJECTS ---
+    const player = {
+        x: 0, y: 0, width: 30, height: 20, speed: 5, color: '#0f0',
+        bullets: [],
+        reset() {
+            this.x = canvas.width / 2 - 15;
+            this.y = canvas.height - 50;
+            this.bullets = [];
+        },
+        draw() {
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x + 12, this.y, 6, 6);
+            ctx.fillRect(this.x + 3, this.y + 6, 24, 6);
+            ctx.fillRect(this.x, this.y + 12, 30, 8);
+        },
+        update() {
+            if (keys.ArrowLeft && this.x > 10) this.x -= this.speed;
+            if (keys.ArrowRight && this.x < canvas.width - 10 - this.width) this.x += this.speed;
+        },
+        shoot() {
+            if (this.bullets.length < 3) {
+                this.bullets.push({ x: this.x + 13, y: this.y, width: 4, height: 10, active: true });
+                playSound('shoot');
+            }
+        }
+    };
+
+    let invaders = [];
+    let alienBullets = [];
+    let particles = [];
+    let invaderDir = 1;
+
+    // Einfache Alien Zeichnung (Pixel)
+    function drawAlienPixel(x, y, color) {
+        ctx.fillStyle = color;
+        // Body
+        ctx.fillRect(x + 4, y, 24, 16);
+        // Arms
+        ctx.fillRect(x, y + 4, 4, 12);
+        ctx.fillRect(x + 28, y + 4, 4, 12);
+        // Eyes (black)
+        ctx.fillStyle = '#000';
+        ctx.fillRect(x + 8, y + 4, 4, 4);
+        ctx.fillRect(x + 20, y + 4, 4, 4);
+    }
+
+    class Invader {
+        constructor(x, y, row) {
+            this.x = x; this.y = y;
+            this.width = 32; this.height = 24;
+            this.active = true;
+            if (row < 1) this.color = '#f00';
+            else if (row < 3) this.color = '#ff0';
+            else this.color = '#fff';
+        }
+        draw() {
+            if (!this.active) return;
+            drawAlienPixel(this.x, this.y, this.color);
+        }
+    }
+
+    function createInvaders(lvl) {
+        invaders = [];
+        alienBullets = [];
+        player.bullets = [];
+        invaderDir = 1;
+        
+        const rows = 5;
+        const cols = 8;
+        const startY = 60 + (lvl * 10);
+        
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                invaders.push(new Invader(50 + c * 50, startY + r * 35, r));
+            }
+        }
+    }
+
+    function createExplosion(x, y, color) {
+        for(let i=0; i<12; i++) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                life: 40,
+                color: color
+            });
+        }
+    }
+
+    // --- GAME LOOP LOGIC ---
+    function update() {
+        if (gameState !== 'PLAYING') return;
+
+        player.update();
+
+        // Aliens Movement
+        let hitEdge = false;
+        let speed = 0.5 + (level * 0.2) + ((40 - invaders.filter(i=>i.active).length) * 0.05);
+        
+        invaders.forEach(inv => {
+            if (!inv.active) return;
+            inv.x += speed * invaderDir;
+            if (inv.x + inv.width > canvas.width - 5 || inv.x < 5) hitEdge = true;
+            if (inv.y + inv.height >= player.y) gameOver();
+        });
+
+        if (hitEdge) {
+            invaderDir *= -1;
+            invaders.forEach(inv => { if(inv.active) inv.y += 20; });
+            playSound('alien_move');
+        }
+
+        // Alien Shooting
+        if (Math.random() < 0.01 + (level * 0.005)) {
+            let activeInvaders = invaders.filter(i => i.active);
+            if(activeInvaders.length > 0) {
+                let shooter = activeInvaders[Math.floor(Math.random() * activeInvaders.length)];
+                alienBullets.push({ x: shooter.x + 14, y: shooter.y + 24, width: 4, height: 10, active: true });
+            }
+        }
+
+        // Player Bullets
+        player.bullets.forEach(b => {
+            b.y -= 8;
+            if (b.y < 0) b.active = false;
+            invaders.forEach(inv => {
+                if (inv.active && b.active && 
+                    b.x < inv.x + inv.width && b.x + b.width > inv.x &&
+                    b.y < inv.y + inv.height && b.y + b.height > inv.y) {
+                    inv.active = false;
+                    b.active = false;
+                    score += 10 * level;
+                    createExplosion(inv.x + 16, inv.y + 12, inv.color);
+                    playSound('explosion');
+                }
+            });
+        });
+        player.bullets = player.bullets.filter(b => b.active);
+
+        // Alien Bullets vs Player
+        alienBullets.forEach(b => {
+            b.y += (4 + level);
+            if (b.y > canvas.height) b.active = false;
+            // Hit check
+            if (b.active && b.x < player.x + player.width && b.x + b.width > player.x &&
+                b.y < player.y + player.height && b.y + b.height > player.y) {
+                lives--;
+                b.active = false;
+                createExplosion(player.x+15, player.y+10, '#0f0');
+                playSound('explosion');
+                player.x = canvas.width/2 - 15; 
+                alienBullets = []; // Clear bullets on death
+                if (lives <= 0) gameOver();
+            }
+        });
+        alienBullets = alienBullets.filter(b => b.active);
+
+        // Particles
+        particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+        particles = particles.filter(p => p.life > 0);
+
+        // Level Win Check
+        if (invaders.length > 0 && invaders.every(i => !i.active)) {
+            nextLevel();
+        }
+    }
+
+    function draw() {
+        // Clear Screen
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // HUD
+        ctx.font = '20px "Courier New"';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(`SCORE: ${score}`, 20, 30);
+        ctx.fillText(`LEVEL: ${level}`, 260, 30);
+        ctx.fillText(`LIVES: ${lives}`, 480, 30);
+        
+        // Line
+        ctx.strokeStyle = '#0f0';
+        ctx.beginPath(); ctx.moveTo(0, canvas.height-25); ctx.lineTo(canvas.width, canvas.height-25); ctx.stroke();
+
+        if (gameState === 'PLAYING' || gameState === 'LEVEL_TRANSITION') {
+            player.draw();
+            invaders.forEach(inv => inv.draw());
+            
+            ctx.fillStyle = '#fff';
+            player.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+            
+            ctx.fillStyle = '#ff0';
+            alienBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 40;
+                ctx.fillRect(p.x, p.y, 3, 3);
+            });
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    function loop() {
+        frames++;
+        update();
+        draw();
+        animationId = requestAnimationFrame(loop);
+    }
+
+    // --- GAME CONTROL FUNCTIONS ---
+
+    function startGame() {
+        // WICHTIG: Audio hier initialisieren
+        initAudio();
+        
+        document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('gameOverScreen').style.display = 'none';
+        document.getElementById('winScreen').style.display = 'none';
+        
+        score = 0;
+        lives = 3;
+        level = 1;
+        player.reset();
+        
+        // Loop nur starten, wenn er nicht schon läuft
+        if (!animationId) loop();
+        
+        startLevel(1);
+    }
+
+    function startLevel(lvl) {
+        gameState = 'LEVEL_TRANSITION';
+        level = lvl;
+        
+        const lvlMsg = document.getElementById('levelScreen');
+        document.getElementById('levelTitle').innerText = `LEVEL ${level}`;
+        lvlMsg.style.display = 'block';
+
+        setTimeout(() => {
+            lvlMsg.style.display = 'none';
+            createInvaders(level);
+            gameState = 'PLAYING';
+        }, 2000);
+    }
+
+    function nextLevel() {
+        if (level >= 3) {
+            gameState = 'WIN';
+            document.getElementById('winScore').innerText = `Punkte: ${score}`;
+            document.getElementById('winScreen').style.display = 'block';
+        } else {
+            startLevel(level + 1);
+        }
+    }
+
+    function gameOver() {
+        gameState = 'GAMEOVER';
+        document.getElementById('finalScore').innerText = `Punkte: ${score}`;
+        document.getElementById('gameOverScreen').style.display = 'block';
+    }
+
+    // --- EVENT LISTENERS FÜR BUTTONS ---
+    // Wir benutzen addEventListener für bessere Browser-Kompatibilität
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('restartBtn').addEventListener('click', startGame);
+    document.getElementById('winRestartBtn').addEventListener('click', startGame);
+
+    // Initiales Bild zeichnen
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+</script>
+</body>
+</html>
