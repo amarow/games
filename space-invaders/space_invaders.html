@@ -140,39 +140,47 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // State Variables
-    let gameState = 'START'; 
-    let level = 1;
-    let score = 0;
-    let lives = 3;
-    let frames = 0;
-    let animationId;
-    let audioCtx = null; // AudioContext erst null, wird beim Start erstellt
+    // Game State Object
+    let state = {
+        gameState: 'START', 
+        level: 1,
+        score: 0,
+        lives: 3,
+        frames: 0,
+        animationId: null,
+        audioCtx: null, // AudioContext erst null, wird beim Start erstellt
+        keys: { ArrowLeft: false, ArrowRight: false, Space: false }, // Moved from global
+        invaders: [], // Moved from global
+        alienBullets: [], // Moved from global
+        particles: [], // Moved from global
+        invaderDir: 1, // Moved from global
+        isFullWidth: false // New, for fullscreen resizing
+    };
 
     // --- AUDIO SYSTEM (Browser-Safe) ---
     function initAudio() {
-        if (!audioCtx) {
+        if (!state.audioCtx) {
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
+                state.audioCtx = new AudioContext();
             } catch (e) {
                 console.warn("Audio konnte nicht initialisiert werden:", e);
             }
         }
-        if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
+        if (state.audioCtx && state.audioCtx.state === 'suspended') {
+            state.audioCtx.resume();
         }
     }
 
     function playSound(type) {
-        if (!audioCtx) return; // Kein Sound, wenn nicht initialisiert
+        if (!state.audioCtx) return; // Kein Sound, wenn nicht initialisiert
 
         try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+            const osc = state.audioCtx.createOscillator();
+            const gain = state.audioCtx.createGain();
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
+            gain.connect(state.audioCtx.destination);
+            const now = state.audioCtx.currentTime;
 
             if (type === 'shoot') {
                 osc.type = 'square';
@@ -192,7 +200,7 @@
                 osc.stop(now + 0.2);
             } else if (type === 'alien_move') {
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(150 - (level * 10), now);
+                osc.frequency.setValueAtTime(150 - (state.level * 10), now);
                 gain.gain.setValueAtTime(0.02, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                 osc.start(now);
@@ -204,21 +212,47 @@
     }
 
     // --- INPUT HANDLING ---
-    const keys = { ArrowLeft: false, ArrowRight: false, Space: false };
+
 
     window.addEventListener('keydown', (e) => {
-        if(e.code === 'ArrowLeft') keys.ArrowLeft = true;
-        if(e.code === 'ArrowRight') keys.ArrowRight = true;
+        if(e.code === 'ArrowLeft') state.keys.ArrowLeft = true;
+        if(e.code === 'ArrowRight') state.keys.ArrowRight = true;
         if(e.code === 'Space') {
-            if (!keys.Space && gameState === 'PLAYING') player.shoot();
-            keys.Space = true;
+            if (!state.keys.Space && state.gameState === 'PLAYING') player.shoot();
+            state.keys.Space = true;
+        }
+
+        if (e.code === 'Escape') {
+            e.preventDefault();
+            if (state.gameState === 'PLAYING' || state.gameState === 'GAMEOVER' || state.gameState === 'LEVEL_TRANSITION' || state.gameState === 'WIN') {
+                state.gameState = 'START';
+                document.getElementById('startScreen').style.display = 'block';
+                document.getElementById('gameOverScreen').style.display = 'none';
+                document.getElementById('levelScreen').style.display = 'none';
+                document.getElementById('winScreen').style.display = 'none';
+                
+                if (state.animationId) cancelAnimationFrame(state.animationId);
+                state.animationId = null;
+                state.invaders = [];
+                state.alienBullets = [];
+                state.particles = [];
+                player.bullets = [];
+                player.reset();
+
+                state.score = 0;
+                state.lives = 3;
+                state.level = 1;
+
+            } else if (state.gameState === 'START') {
+                window.location.href = '../index.html';
+            }
         }
     });
 
     window.addEventListener('keyup', (e) => {
-        if(e.code === 'ArrowLeft') keys.ArrowLeft = false;
-        if(e.code === 'ArrowRight') keys.ArrowRight = false;
-        if(e.code === 'Space') keys.Space = false;
+        if(e.code === 'ArrowLeft') state.keys.ArrowLeft = false;
+        if(e.code === 'ArrowRight') state.keys.ArrowRight = false;
+        if(e.code === 'Space') state.keys.Space = false;
     });
 
     // --- GAME OBJECTS ---
@@ -237,8 +271,8 @@
             ctx.fillRect(this.x, this.y + 12, 30, 8);
         },
         update() {
-            if (keys.ArrowLeft && this.x > 10) this.x -= this.speed;
-            if (keys.ArrowRight && this.x < canvas.width - 10 - this.width) this.x += this.speed;
+            if (state.keys.ArrowLeft && this.x > 10) this.x -= this.speed;
+            if (state.keys.ArrowRight && this.x < canvas.width - 10 - this.width) this.x += this.speed;
         },
         shoot() {
             if (this.bullets.length < 3) {
@@ -248,10 +282,7 @@
         }
     };
 
-    let invaders = [];
-    let alienBullets = [];
-    let particles = [];
-    let invaderDir = 1;
+
 
     // Einfache Alien Zeichnung (Pixel)
     function drawAlienPixel(x, y, color) {
@@ -283,10 +314,10 @@
     }
 
     function createInvaders(lvl) {
-        invaders = [];
-        alienBullets = [];
+        state.invaders = [];
+        state.alienBullets = [];
         player.bullets = [];
-        invaderDir = 1;
+        state.invaderDir = 1;
         
         const rows = 5;
         const cols = 8;
@@ -294,14 +325,14 @@
         
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
-                invaders.push(new Invader(50 + c * 50, startY + r * 35, r));
+                state.invaders.push(new Invader(50 + c * 50, startY + r * 35, r));
             }
         }
     }
 
     function createExplosion(x, y, color) {
         for(let i=0; i<12; i++) {
-            particles.push({
+            state.particles.push({
                 x: x, y: y,
                 vx: (Math.random() - 0.5) * 6,
                 vy: (Math.random() - 0.5) * 6,
@@ -313,33 +344,33 @@
 
     // --- GAME LOOP LOGIC ---
     function update() {
-        if (gameState !== 'PLAYING') return;
+        if (state.gameState !== 'PLAYING') return;
 
         player.update();
 
         // Aliens Movement
         let hitEdge = false;
-        let speed = 0.5 + (level * 0.2) + ((40 - invaders.filter(i=>i.active).length) * 0.05);
+        let speed = 0.5 + (state.level * 0.2) + ((40 - state.invaders.filter(i=>i.active).length) * 0.05);
         
-        invaders.forEach(inv => {
+        state.invaders.forEach(inv => {
             if (!inv.active) return;
-            inv.x += speed * invaderDir;
+            inv.x += speed * state.invaderDir;
             if (inv.x + inv.width > canvas.width - 5 || inv.x < 5) hitEdge = true;
             if (inv.y + inv.height >= player.y) gameOver();
         });
 
         if (hitEdge) {
-            invaderDir *= -1;
-            invaders.forEach(inv => { if(inv.active) inv.y += 20; });
+            state.invaderDir *= -1;
+            state.invaders.forEach(inv => { if(inv.active) inv.y += 20; });
             playSound('alien_move');
         }
 
         // Alien Shooting
-        if (Math.random() < 0.01 + (level * 0.005)) {
-            let activeInvaders = invaders.filter(i => i.active);
+        if (Math.random() < 0.01 + (state.level * 0.005)) {
+            let activeInvaders = state.invaders.filter(i => i.active);
             if(activeInvaders.length > 0) {
                 let shooter = activeInvaders[Math.floor(Math.random() * activeInvaders.length)];
-                alienBullets.push({ x: shooter.x + 14, y: shooter.y + 24, width: 4, height: 10, active: true });
+                state.alienBullets.push({ x: shooter.x + 14, y: shooter.y + 24, width: 4, height: 10, active: true });
             }
         }
 
@@ -347,13 +378,13 @@
         player.bullets.forEach(b => {
             b.y -= 8;
             if (b.y < 0) b.active = false;
-            invaders.forEach(inv => {
+            state.invaders.forEach(inv => {
                 if (inv.active && b.active && 
                     b.x < inv.x + inv.width && b.x + b.width > inv.x &&
                     b.y < inv.y + inv.height && b.y + b.height > inv.y) {
                     inv.active = false;
                     b.active = false;
-                    score += 10 * level;
+                    state.score += 10 * state.level;
                     createExplosion(inv.x + 16, inv.y + 12, inv.color);
                     playSound('explosion');
                 }
@@ -362,29 +393,29 @@
         player.bullets = player.bullets.filter(b => b.active);
 
         // Alien Bullets vs Player
-        alienBullets.forEach(b => {
-            b.y += (4 + level);
+        state.alienBullets.forEach(b => {
+            b.y += (4 + state.level);
             if (b.y > canvas.height) b.active = false;
             // Hit check
             if (b.active && b.x < player.x + player.width && b.x + b.width > player.x &&
                 b.y < player.y + player.height && b.y + b.height > player.y) {
-                lives--;
+                state.lives--;
                 b.active = false;
                 createExplosion(player.x+15, player.y+10, '#0f0');
                 playSound('explosion');
                 player.x = canvas.width/2 - 15; 
-                alienBullets = []; // Clear bullets on death
-                if (lives <= 0) gameOver();
+                state.alienBullets = []; // Clear bullets on death
+                if (state.lives <= 0) gameOver();
             }
         });
-        alienBullets = alienBullets.filter(b => b.active);
+        state.alienBullets = state.alienBullets.filter(b => b.active);
 
         // Particles
-        particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
-        particles = particles.filter(p => p.life > 0);
+        state.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+        state.particles = state.particles.filter(p => p.life > 0);
 
         // Level Win Check
-        if (invaders.length > 0 && invaders.every(i => !i.active)) {
+        if (state.invaders.length > 0 && state.invaders.every(i => !i.active)) {
             nextLevel();
         }
     }
@@ -397,25 +428,25 @@
         // HUD
         ctx.font = '20px "Courier New"';
         ctx.fillStyle = '#fff';
-        ctx.fillText(`SCORE: ${score}`, 20, 30);
-        ctx.fillText(`LEVEL: ${level}`, 260, 30);
-        ctx.fillText(`LIVES: ${lives}`, 480, 30);
+        ctx.fillText(`SCORE: ${state.score}`, 20, 30);
+        ctx.fillText(`LEVEL: ${state.level}`, 260, 30);
+        ctx.fillText(`LIVES: ${state.lives}`, 480, 30);
         
         // Line
         ctx.strokeStyle = '#0f0';
         ctx.beginPath(); ctx.moveTo(0, canvas.height-25); ctx.lineTo(canvas.width, canvas.height-25); ctx.stroke();
 
-        if (gameState === 'PLAYING' || gameState === 'LEVEL_TRANSITION') {
+        if (state.gameState === 'PLAYING' || state.gameState === 'LEVEL_TRANSITION') {
             player.draw();
-            invaders.forEach(inv => inv.draw());
+            state.invaders.forEach(inv => inv.draw());
             
             ctx.fillStyle = '#fff';
             player.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
             
             ctx.fillStyle = '#ff0';
-            alienBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+            state.alienBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-            particles.forEach(p => {
+            state.particles.forEach(p => {
                 ctx.fillStyle = p.color;
                 ctx.globalAlpha = p.life / 40;
                 ctx.fillRect(p.x, p.y, 3, 3);
@@ -425,61 +456,61 @@
     }
 
     function loop() {
-        frames++;
+        state.frames++;
         update();
         draw();
-        animationId = requestAnimationFrame(loop);
+        state.animationId = requestAnimationFrame(loop);
     }
 
     // --- GAME CONTROL FUNCTIONS ---
 
     function startGame() {
         // WICHTIG: Audio hier initialisieren
-        initAudio();
+        initAudio(); // initAudio uses state.audioCtx
         
         document.getElementById('startScreen').style.display = 'none';
         document.getElementById('gameOverScreen').style.display = 'none';
         document.getElementById('winScreen').style.display = 'none';
         
-        score = 0;
-        lives = 3;
-        level = 1;
-        player.reset();
+        state.score = 0;
+        state.lives = 3;
+        state.level = 1;
+        player.reset(); // player.reset() uses canvas.width directly
         
         // Loop nur starten, wenn er nicht schon läuft
-        if (!animationId) loop();
+        if (!state.animationId) loop();
         
         startLevel(1);
     }
 
     function startLevel(lvl) {
-        gameState = 'LEVEL_TRANSITION';
-        level = lvl;
+        state.gameState = 'LEVEL_TRANSITION';
+        state.level = lvl;
         
         const lvlMsg = document.getElementById('levelScreen');
-        document.getElementById('levelTitle').innerText = `LEVEL ${level}`;
+        document.getElementById('levelTitle').innerText = `LEVEL ${state.level}`;
         lvlMsg.style.display = 'block';
 
         setTimeout(() => {
             lvlMsg.style.display = 'none';
-            createInvaders(level);
-            gameState = 'PLAYING';
+            createInvaders(state.level);
+            state.gameState = 'PLAYING';
         }, 2000);
     }
 
     function nextLevel() {
-        if (level >= 3) {
-            gameState = 'WIN';
-            document.getElementById('winScore').innerText = `Punkte: ${score}`;
+        if (state.level >= 3) {
+            state.gameState = 'WIN';
+            document.getElementById('winScore').innerText = `Punkte: ${state.score}`;
             document.getElementById('winScreen').style.display = 'block';
         } else {
-            startLevel(level + 1);
+            startLevel(state.level + 1);
         }
     }
 
     function gameOver() {
-        gameState = 'GAMEOVER';
-        document.getElementById('finalScore').innerText = `Punkte: ${score}`;
+        state.gameState = 'GAMEOVER';
+        document.getElementById('finalScore').innerText = `Punkte: ${state.score}`;
         document.getElementById('gameOverScreen').style.display = 'block';
     }
 

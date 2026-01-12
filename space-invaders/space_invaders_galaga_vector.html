@@ -808,6 +808,43 @@
         }
     }
 
+    // --- RESIZE LOGIC ---
+    function handleResize() {
+        const isFull = document.fullscreenElement != null;
+        if (state.isFullWidth === isFull) return; // Avoid redundant resizes
+
+        state.isFullWidth = isFull;
+        const oldW = canvas.width;
+        canvas.width = state.isFullWidth ? 1120 : 560;
+        const diff = (canvas.width - oldW) / 2;
+
+        // Reposition game elements
+        if (state.player) state.player.x += diff;
+        state.enemies.forEach(en => {
+            if (en.gridX) en.gridX += diff;
+            if(en.pathStart) en.pathStart.x += diff;
+            if(en.pathEnd) en.pathEnd.x += diff;
+            if(en.cp1) en.cp1.x += diff;
+            if(en.cp2) en.cp2.x += diff;
+            if(en.circleCenter) en.circleCenter.x += diff;
+            en.x += diff;
+        });
+        state.bullets.forEach(b => b.x += diff);
+        state.enemyBullets.forEach(b => b.x += diff);
+        state.stars = [];
+        initGame(); // Re-creates stars for the new width
+    }
+    document.addEventListener('fullscreenchange', handleResize);
+    
+    // Set initial size on load
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (localStorage.getItem('fullscreen-state') === 'true' && document.fullscreenElement) {
+                handleResize();
+            }
+        }, 200);
+    });
+
     // --- INPUT ---
     const keys = { ArrowLeft: false, ArrowRight: false, Space: false, Control: false };
 
@@ -819,42 +856,25 @@
         // Speed Control
         if (e.key >= '1' && e.key <= '9') state.gameSpeed = parseInt(e.key);
         if (e.key === '0') state.gameSpeed = 10;
-
-        // Toggle Full Width & Fullscreen
-        if (e.code === 'KeyF') {
-            state.isFullWidth = !state.isFullWidth;
-            const oldWidth = canvas.width;
-            canvas.width = state.isFullWidth ? 1120 : 560;
-            const widthDiff = (canvas.width - oldWidth) / 2;
-
-            // Browser Fullscreen Toggle
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-                });
-            } else {
-                document.exitFullscreen();
-            }
-
-            // Shift existing elements to maintain relative positions
-            if (state.player) state.player.x += widthDiff;
-            state.enemies.forEach(en => {
-                en.gridX += widthDiff;
-                en.x += widthDiff;
-            });
-            state.bullets.forEach(b => b.x += widthDiff);
-            state.enemyBullets.forEach(b => b.x += widthDiff);
-            
-            // Re-init stars for new width
-            state.stars = [];
-            initGame();
-        }
-
-        // Escape to Quit
+        
         if (e.code === 'Escape') {
-            state.lives = 0;
-            state.player.dead = true;
-            handlePlayerDeath();
+            e.preventDefault();
+            if (state.screen === 'PLAYING' || state.screen === 'GAMEOVER' || state.screen === 'LEVEL_INTRO') {
+                state.screen = 'START';
+                document.getElementById('startScreen').style.display = 'block';
+                document.getElementById('gameOverScreen').style.display = 'none';
+                const levelScreen = document.getElementById('levelScreen');
+                if (levelScreen) levelScreen.style.display = 'none';
+
+                // Reset game entities
+                state.enemies = [];
+                state.bullets = [];
+                state.enemyBullets = [];
+                state.particles = [];
+                state.player = null;
+            } else if (state.screen === 'START') {
+                window.location.href = '../index.html';
+            }
         }
 
         if(e.code === 'Space') {
@@ -914,6 +934,61 @@
     initGame();
     loop(0); // Pass 0 initial timestamp
 
+</script>
+<script>
+    const FULLSCREEN_KEY = 'fullscreen-state';
+
+    function isFullscreen() {
+        return document.fullscreenElement != null;
+    }
+
+    function enterFullscreen() {
+        if (!isFullscreen()) {
+            document.documentElement.requestFullscreen().catch(err => {
+                // console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        }
+    }
+
+    function exitFullscreen() {
+        if (isFullscreen()) {
+            document.exitFullscreen();
+        }
+    }
+
+    function handleFullscreenToggle() {
+        if (isFullscreen()) {
+            exitFullscreen();
+        } else {
+            enterFullscreen();
+        }
+    }
+
+    // On page load, check the stored state
+    document.addEventListener('DOMContentLoaded', () => {
+        // We use a timeout to avoid issues where the browser isn't ready
+        setTimeout(() => {
+            if (localStorage.getItem(FULLSCREEN_KEY) === 'true' && !isFullscreen()) {
+                enterFullscreen();
+            }
+             if (localStorage.getItem(FULLSCREEN_KEY) === 'false' && isFullscreen()) {
+                exitFullscreen();
+            }
+        }, 150);
+    });
+
+    // When fullscreen state changes (e.g., user presses ESC, or through our function)
+    document.addEventListener('fullscreenchange', () => {
+        localStorage.setItem(FULLSCREEN_KEY, isFullscreen() ? 'true' : 'false');
+    });
+
+    // Listen for the F key
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'KeyF' || e.key === 'f') {
+            e.preventDefault();
+            handleFullscreenToggle();
+        }
+    });
 </script>
 </body>
 </html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spiele-Sammlung</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            text-align: center;
+            padding: 40px;
+            margin: 0;
+        }
+        h1 {
+            font-size: 3.5rem;
+            color: #ffffff;
+            text-shadow: 0 0 10px #007bff, 0 0 20px #007bff, 0 0 30px #007bff;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 50px;
+        }
+        li {
+            margin: 25px 0;
+        }
+        a {
+            text-decoration: none;
+            font-size: 1.8rem;
+            color: #ffffff;
+            background-color: #007bff;
+            padding: 15px 30px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: inline-block;
+            min-width: 250px;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.5);
+        }
+        a:hover {
+            background-color: #0056b3;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Spiele-Sammlung</h1>
+        <ul>
+            <li><a href="space-invaders/space_invaders_galaga.html">Galaga</a></li>
+            <li><a href="space-invaders/space_invaders_galaga_vector.html">Galaga (Vector)</a></li>
+            <li><a href="space-invaders/space_invaders.html">Space Invaders (Retro)</a></li>
+        </ul>
+    </div>
+
+<script>
+    const FULLSCREEN_KEY = 'fullscreen-state';
+
+    function isFullscreen() {
+        return document.fullscreenElement != null;
+    }
+
+    function enterFullscreen() {
+        if (!isFullscreen()) {
+            document.documentElement.requestFullscreen().catch(err => {
+                // console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        }
+    }
+
+    function exitFullscreen() {
+        if (isFullscreen()) {
+            document.exitFullscreen();
+        }
+    }
+
+    function handleFullscreenToggle() {
+        if (isFullscreen()) {
+            exitFullscreen();
+        } else {
+            enterFullscreen();
+        }
+    }
+
+    // On page load, check the stored state
+    document.addEventListener('DOMContentLoaded', () => {
+        // We use a timeout to avoid issues where the browser isn't ready
+        setTimeout(() => {
+            if (localStorage.getItem(FULLSCREEN_KEY) === 'true' && !isFullscreen()) {
+                enterFullscreen();
+            }
+             if (localStorage.getItem(FULLSCREEN_KEY) === 'false' && isFullscreen()) {
+                exitFullscreen();
+            }
+        }, 150);
+    });
+
+    // When fullscreen state changes (e.g., user presses ESC, or through our function)
+    document.addEventListener('fullscreenchange', () => {
+        localStorage.setItem(FULLSCREEN_KEY, isFullscreen() ? 'true' : 'false');
+    });
+
+    // Listen for the F key
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'KeyF' || e.key === 'f') {
+            e.preventDefault();
+            handleFullscreenToggle();
+        }
+    });
+</script>
+</body>
+</html>
