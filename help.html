@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Controls</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #050505;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background-image: 
+                linear-gradient(rgba(0, 20, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 20, 0, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2.5rem;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .controls-container {
+            background-color: #111;
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .key-row:last-child {
+            border-bottom: none;
+        }
+
+        .action {
+            font-size: 1.2rem;
+            color: #ccc;
+            text-transform: uppercase;
+        }
+
+        .keys {
+            display: flex;
+            gap: 10px;
+        }
+
+        .key {
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-family: monospace;
+            font-weight: bold;
+            color: #fff;
+            box-shadow: 0 4px 0 #000;
+            min-width: 30px;
+            text-align: center;
+            transition: transform 0.1s;
+        }
+        
+        .key.wide {
+            min-width: 100px;
+        }
+
+        .back-btn {
+            margin-top: 40px;
+            text-decoration: none;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            background: transparent;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .back-btn:hover, .back-btn.focused {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 15px #00ff00;
+            transform: translateY(-2px);
+            outline: none;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 2px;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+
+    <h1>HOW TO PLAY</h1>
+
+    <div class="controls-container">
+        
+        <div class="key-row">
+            <div class="action">Navigieren / Steuern</div>
+            <div class="keys">
+                <div class="key">↑</div>
+                <div class="key">←</div>
+                <div class="key">↓</div>
+                <div class="key">→</div>
+            </div>
+        </div>
+
+        <div class="key-row">
+            <div class="action">Start / Feuern</div>
+            <div class="keys">
+                <div class="key wide">SPACE</div>
+                <div class="key">ENTER</div>
+            </div>
+        </div>
+
+        <div class="key-row">
+            <div class="action">Vollbild (Fullscreen)</div>
+            <div class="keys">
+                <div class="key">F</div>
+            </div>
+        </div>
+
+        <div class="key-row">
+            <div class="action">Zurück zum Menü</div>
+            <div class="keys">
+                <div class="key">ESC</div>
+            </div>
+        </div>
+
+    </div>
+
+    <a href="index.html" class="back-btn" id="backBtn">Back to Arcade</a>
+
+<script>
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') {
+            window.location.href = 'index.html';
+        }
+    });
+    // Auto-focus back button for keyboard users
+    document.getElementById('backBtn').focus();
+</script>
+</body>
+</html>
