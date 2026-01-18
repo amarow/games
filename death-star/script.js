@@ -166,8 +166,7 @@ class TrenchObstacle {
         });
         ctx.stroke();
     }
-    
-    
+        
     checkCollision(player){ 
         const dz = (cameraZ + 20) - this.z; 
         if (dz > 0 && dz < 40) {
