@@ -3,114 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spiele-Sammlung</title>
+    <title>Arcade Sammlung</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #121212;
+            font-family: 'Orbitron', sans-serif;
+            background-color: #050505;
             color: #e0e0e0;
-            text-align: center;
-            padding: 40px;
             margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background-image: 
+                linear-gradient(rgba(0, 20, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 20, 0, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
         }
+
         h1 {
-            font-size: 3.5rem;
-            color: #ffffff;
-            text-shadow: 0 0 10px #007bff, 0 0 20px #007bff, 0 0 30px #007bff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2.5rem;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00, 4px 4px 0px #003300;
+            margin-bottom: 60px;
+            text-align: center;
+            letter-spacing: 2px;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            width: 100%;
+            max-width: 1100px;
         }
-        ul {
-            list-style: none;
-            padding: 0;
-            margin-top: 50px;
-        }
-        li {
-            margin: 25px 0;
-        }
-        a {
+
+        .game-card {
+            background-color: #111;
+            border: 2px solid #333;
+            border-radius: 12px;
+            overflow: hidden;
             text-decoration: none;
-            font-size: 1.8rem;
-            color: #ffffff;
-            background-color: #007bff;
-            padding: 15px 30px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            display: inline-block;
-            min-width: 250px;
-            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.5);
+            color: #fff;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
         }
-        a:hover {
-            background-color: #0056b3;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.7);
+
+        .game-card:hover, .game-card.focused {
+            transform: translateY(-8px) scale(1.02);
+            border-color: #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+            z-index: 10;
+            outline: none;
+        }
+
+        .icon-area {
+            height: 160px; /* Restored compact height */
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid #333;
+            position: relative;
+        }
+
+        .game-card:hover .icon-area, .game-card.focused .icon-area {
+            background-color: #0a0a0a;
+        }
+
+        .game-info {
+            padding: 15px;
+            text-align: center;
+            background: linear-gradient(to bottom, #1a1a1a, #111);
+        }
+
+        .game-title {
+            font-size: 1rem; /* Slightly smaller text */
+            font-weight: 700;
+            margin: 0;
+            color: #ccc;
+            text-transform: uppercase;
+        }
+
+        .game-card:hover .game-title, .game-card.focused .game-title {
+            color: #fff;
+            text-shadow: 0 0 5px #fff;
+        }
+
+        /* SVG Styles */
+        svg {
+            width: 70px; /* Restored compact icon size */
+            height: 70px;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+            transition: all 0.3s;
+        }
+
+        .game-card:hover svg, .game-card.focused svg {
+            filter: drop-shadow(0 0 8px rgba(0, 255, 0, 0.8));
+            transform: scale(1.1);
+        }
+
+        /* Individual Icon Colors */
+        .icon-galaga path { fill: #ff3333; }
+        .icon-vector path { stroke: #00ff00; stroke-width: 2; fill: none; }
+        .icon-invader rect { fill: #00ff00; }
+        .icon-deathstar circle, .icon-deathstar path { stroke: #00ff00; stroke-width: 2; fill: none; }
+        .icon-deathstar .fill { fill: rgba(0, 255, 0, 0.1); }
+
+        .badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #222;
+            color: #888;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 2px;
+            pointer-events: none;
+            z-index: 100;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Spiele-Sammlung</h1>
-        <ul>
-            <li><a href="space-invaders/space_invaders_galaga.html">Galaga</a></li>
-            <li><a href="space-invaders/space_invaders_galaga_vector.html">Galaga (Vector)</a></li>
-            <li><a href="space-invaders/space_invaders.html">Space Invaders (Retro)</a></li>
-        </ul>
+
+    <div class="scanlines"></div>
+
+    <h1>ARCADE COLLECTION</h1>
+
+    <div class="grid-container">
+        <!-- Galaga -->
+        <a href="space-invaders/space_invaders_galaga.html" class="game-card">
+            <div class="icon-area">
+                <svg viewBox="0 0 100 100" class="icon-galaga">
+                    <path d="M50 20 L60 40 L50 35 L40 40 Z" />
+                    <path d="M30 50 L40 40 L50 70 L60 40 L70 50 L80 80 L20 80 Z" />
+                </svg>
+            </div>
+            <div class="game-info">
+                <h2 class="game-title">Galaga</h2>
+            </div>
+        </a>
+
+        <!-- Galaga Vector -->
+        <a href="space-invaders/space_invaders_galaga_vector.html" class="game-card">
+            <span class="badge">VECTREX</span>
+            <div class="icon-area">
+                <svg viewBox="0 0 100 100" class="icon-vector">
+                    <path d="M50 20 L70 80 L50 70 L30 80 Z" />
+                    <path d="M50 35 L50 70" />
+                </svg>
+            </div>
+            <div class="game-info">
+                <h2 class="game-title">Galaga Vector</h2>
+            </div>
+        </a>
+
+        <!-- Space Invaders -->
+        <a href="space-invaders/space_invaders.html" class="game-card">
+            <span class="badge">CLASSIC</span>
+            <div class="icon-area">
+                <svg viewBox="0 0 11 8" class="icon-invader">
+                    <rect x="2" y="0" width="1" height="1"/> <rect x="8" y="0" width="1" height="1"/>
+                    <rect x="3" y="1" width="1" height="1"/> <rect x="7" y="1" width="1" height="1"/>
+                    <rect x="2" y="2" width="7" height="1"/>
+                    <rect x="1" y="3" width="2" height="1"/> <rect x="4" y="3" width="3" height="1"/> <rect x="8" y="3" width="2" height="1"/>
+                    <rect x="0" y="4" width="11" height="1"/>
+                    <rect x="0" y="5" width="1" height="1"/> <rect x="2" y="5" width="7" height="1"/> <rect x="10" y="5" width="1" height="1"/>
+                    <rect x="0" y="6" width="1" height="1"/> <rect x="2" y="6" width="1" height="1"/> <rect x="8" y="6" width="1" height="1"/> <rect x="10" y="6" width="1" height="1"/>
+                    <rect x="3" y="7" width="2" height="1"/> <rect x="6" y="7" width="2" height="1"/>
+                </svg>
+            </div>
+            <div class="game-info">
+                <h2 class="game-title">Space Invaders</h2>
+            </div>
+        </a>
+
+        <!-- Death Star -->
+        <a href="death-star/index.html" class="game-card">
+            <span class="badge">NEW</span>
+            <div class="icon-area">
+                <svg viewBox="0 0 100 100" class="icon-deathstar">
+                    <circle cx="50" cy="50" r="40" class="fill"/>
+                    <path d="M10 50 L90 50" />
+                    <circle cx="35" cy="35" r="12" />
+                    <path d="M35 35 L50 50" style="opacity:0.5"/>
+                    <path d="M15 50 Q 50 20 85 50" style="fill:none; stroke-dasharray: 4,4; opacity: 0.5" />
+                    <path d="M15 50 Q 50 80 85 50" style="fill:none; stroke-dasharray: 4,4; opacity: 0.5" />
+                </svg>
+            </div>
+            <div class="game-info">
+                <h2 class="game-title">Death Star Assault</h2>
+            </div>
+        </a>
     </div>
 
 <script>
     const FULLSCREEN_KEY = 'fullscreen-state';
 
-    function isFullscreen() {
-        return document.fullscreenElement != null;
-    }
-
+    function isFullscreen() { return document.fullscreenElement != null; }
     function enterFullscreen() {
         if (!isFullscreen()) {
-            document.documentElement.requestFullscreen().catch(err => {
-                // console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-            });
+            document.documentElement.requestFullscreen().catch(err => console.log(err.message));
         }
     }
+    function exitFullscreen() { if (isFullscreen()) { document.exitFullscreen(); } }
+    function handleFullscreenToggle() { if (isFullscreen()) { exitFullscreen(); } else { enterFullscreen(); } }
 
-    function exitFullscreen() {
-        if (isFullscreen()) {
-            document.exitFullscreen();
-        }
-    }
-
-    function handleFullscreenToggle() {
-        if (isFullscreen()) {
-            exitFullscreen();
-        } else {
-            enterFullscreen();
-        }
-    }
-
-    // On page load, check the stored state
     document.addEventListener('DOMContentLoaded', () => {
-        // We use a timeout to avoid issues where the browser isn't ready
-        setTimeout(() => {
-            if (localStorage.getItem(FULLSCREEN_KEY) === 'true' && !isFullscreen()) {
-                enterFullscreen();
-            }
-             if (localStorage.getItem(FULLSCREEN_KEY) === 'false' && isFullscreen()) {
-                exitFullscreen();
-            }
-        }, 150);
+        setTimeout(() => { if (localStorage.getItem(FULLSCREEN_KEY) === 'true' && !isFullscreen()) enterFullscreen(); }, 150);
     });
 
-    // When fullscreen state changes (e.g., user presses ESC, or through our function)
-    document.addEventListener('fullscreenchange', () => {
-        localStorage.setItem(FULLSCREEN_KEY, isFullscreen() ? 'true' : 'false');
-    });
+    document.addEventListener('fullscreenchange', () => { localStorage.setItem(FULLSCREEN_KEY, isFullscreen() ? 'true' : 'false'); });
 
-    // Listen for the F key
     window.addEventListener('keydown', (e) => {
-        if (e.code === 'KeyF' || e.key === 'f') {
+        if (e.code === 'KeyF' || e.key === 'f') { e.preventDefault(); handleFullscreenToggle(); }
+    });
+
+    // --- Keyboard Navigation ---
+    const cards = document.querySelectorAll('.game-card');
+    let focusedIndex = -1;
+
+    function setFocus(index) {
+        if (index < 0) index = cards.length - 1;
+        if (index >= cards.length) index = 0;
+        cards.forEach(c => c.classList.remove('focused'));
+        cards[index].classList.add('focused');
+        focusedIndex = index;
+    }
+
+    cards.forEach((card, index) => {
+        card.addEventListener('mouseenter', () => setFocus(index));
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (focusedIndex === -1 && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+            e.preventDefault(); setFocus(0); return;
+        }
+
+        const grid = document.querySelector('.grid-container');
+        const gridStyle = window.getComputedStyle(grid);
+        const colCount = gridStyle.gridTemplateColumns.split(' ').length;
+
+        if (e.code === 'ArrowRight') { e.preventDefault(); setFocus(focusedIndex + 1); }
+        else if (e.code === 'ArrowLeft') { e.preventDefault(); setFocus(focusedIndex - 1); }
+        else if (e.code === 'ArrowDown') { e.preventDefault(); const next = focusedIndex + colCount; if (next < cards.length) setFocus(next); }
+        else if (e.code === 'ArrowUp') { e.preventDefault(); const prev = focusedIndex - colCount; if (prev >= 0) setFocus(prev); }
+        else if (e.code === 'Enter' || e.code === 'Space') {
             e.preventDefault();
-            handleFullscreenToggle();
+            if (focusedIndex !== -1) cards[focusedIndex].click();
         }
     });
 </script>

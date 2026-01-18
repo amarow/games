@@ -355,8 +355,7 @@
             this.x = canvas.width / 2 - this.width;
             this.y = canvas.height - 50;
             this.speed = 3.5; // Slightly reduced base speed
-            this.dual = false;
-            this.triple = false;
+            this.extraShips = 0;
             this.dead = false;
             this.cooldown = 0;
         }
@@ -365,12 +364,7 @@
             if (this.dead) return;
             // Normalize speed with dt
             const moveSpeed = this.speed * dt;
-            
-            // Adjust width for boundary check
-            let totalWidth = this.width;
-            if (this.triple) totalWidth = this.width * 3;
-            else if (this.dual) totalWidth = this.width * 2;
-
+            let totalWidth = this.width + this.extraShips * 24;
             if (keys.ArrowLeft && this.x > 10) this.x -= moveSpeed;
             if (keys.ArrowRight && this.x < canvas.width - 10 - totalWidth) this.x += moveSpeed;
 
@@ -386,12 +380,8 @@
 
         draw() {
             if (this.dead) return;
-            renderPlayer(ctx, this.x, this.y, this.width, this.height);
-            if (this.dual || this.triple) {
-                renderPlayer(ctx, this.x + 24, this.y, this.width, this.height);
-            }
-            if (this.triple) {
-                renderPlayer(ctx, this.x + 48, this.y, this.width, this.height);
+            for (let i = 0; i <= this.extraShips; i++) {
+                renderPlayer(ctx, this.x + (i * 24), this.y, this.width, this.height);
             }
         }
 
@@ -399,26 +389,16 @@
             if (this.dead) return;
             state.shotsFired++;
             playSound('shoot');
-            // Bullet speed scaled in Bullet class, just init here
-            state.bullets.push(new Bullet(this.x + 10, this.y, -7, true));
-            if (this.dual || this.triple) {
-                state.bullets.push(new Bullet(this.x + 34, this.y, -7, true));
-            }
-            if (this.triple) {
-                state.bullets.push(new Bullet(this.x + 58, this.y, -7, true));
+            for (let i = 0; i <= this.extraShips; i++) {
+                state.bullets.push(new Bullet(this.x + 10 + (i * 24), this.y, -7, true));
             }
         }
         
         hit() {
-            if(this.triple) {
-                this.triple = false;
-                this.dual = true; // Downgrade to dual
-                createExplosion(this.x + 48, this.y, '#f00');
+            if (this.extraShips > 0) {
+                createExplosion(this.x + this.extraShips * 24, this.y, '#f00');
                 playSound('explosion');
-            } else if(this.dual) {
-                this.dual = false;
-                createExplosion(this.x + 24, this.y, '#f00');
-                playSound('explosion');
+                this.extraShips--;
             } else {
                 this.dead = true;
                 createExplosion(this.x, this.y, '#f00');
@@ -623,11 +603,9 @@
         state.enemyBullets = [];
         
         // Preserve Dual Fighter status if player exists
-        const wasDual = state.player ? state.player.dual : false;
-        const wasTriple = state.player ? state.player.triple : false;
+        const extraShips = state.player ? state.player.extraShips : 0;
         state.player = new Player();
-        state.player.dual = wasDual;
-        state.player.triple = wasTriple;
+        state.player.extraShips = extraShips;
         
         const layout = [
             'boss', 'butterfly', 'butterfly', 'bee', 'bee'
@@ -725,23 +703,19 @@
                 b.y += b.vy * dt;
                 if(b.y > canvas.height) b.active = false;
                 if (b.active && state.player && !state.player.dead &&
-                    b.x < state.player.x + state.player.width && b.x + b.width > state.player.x &&
+                    b.x < state.player.x + (state.player.width + state.player.extraShips * 24) && b.x + b.width > state.player.x &&
                     b.y < state.player.y + state.player.height && b.y + b.height > state.player.y) {
                     
                     b.active = false;
                     
-                    if (state.player.dual) {
-                        state.player.triple = true;
-                    } else {
-                        state.player.dual = true;
-                    }
+                    if (state.player.extraShips < 4) state.player.extraShips++;
                     
                     // Play powerup sound
                 }
             } else {
                 b.update(dt);
                 if (b.active && state.player && !state.player.dead &&
-                    b.x < state.player.x + state.player.width && b.x + b.width > state.player.x &&
+                    b.x < state.player.x + (state.player.width + state.player.extraShips * 24) && b.x + b.width > state.player.x &&
                     b.y < state.player.y + state.player.height && b.y + b.height > state.player.y) {
                     b.active = false;
                     state.player.hit();

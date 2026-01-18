@@ -218,7 +218,11 @@
         if(e.code === 'ArrowLeft') state.keys.ArrowLeft = true;
         if(e.code === 'ArrowRight') state.keys.ArrowRight = true;
         if(e.code === 'Space') {
-            if (!state.keys.Space && state.gameState === 'PLAYING') player.shoot();
+            if (state.gameState === 'START' || state.gameState === 'GAMEOVER' || state.gameState === 'WIN') {
+                startGame();
+            } else if (!state.keys.Space && state.gameState === 'PLAYING') {
+                player.shoot();
+            }
             state.keys.Space = true;
         }
 
