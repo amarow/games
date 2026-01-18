@@ -353,13 +353,6 @@ function drawDeathStarEscape() {
         ctx.strokeStyle = `rgba(255, 0, 0, ${Math.max(0, 1 - explosionAge/400)})`;
         ctx.lineWidth = 30;
         ctx.beginPath(); ctx.arc(cx, cy, ring2, 0, Math.PI*2); ctx.stroke();
-
-        // --- PHASE 4: Secondary Fireworks ---
-        if (Math.random() < 0.1) { // 10% chance per frame
-            const exX = cx + (Math.random() - 0.5) * explosionAge * 10;
-            const exY = cy + (Math.random() - 0.5) * explosionAge * 10;
-            createExplosion(exX, exY, 30, Math.random() > 0.5 ? '#FFFF00' : '#FFFFFF');
-        }
     } else if (escapeTimer > 800) {
         gameState = 'win';
     }
