@@ -237,9 +237,17 @@
     <a href="index.html" class="back-btn" id="backBtn">Back to Arcade</a>
 
 <script>
+    function goBack() {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage('closeGame', '*');
+        } else {
+            window.location.href = 'index.html';
+        }
+    }
+
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') {
-            window.location.href = 'index.html';
+            goBack();
         }
     });
 
@@ -252,9 +260,15 @@
     document.addEventListener('touchend', e => {
         const touchEndY = e.changedTouches[0].screenY;
         if (touchEndY - touchStartY > 100) {
-            window.location.href = 'index.html';
+            goBack();
         }
     }, { passive: true });
+    
+    // Button click
+    document.getElementById('backBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        goBack();
+    });
 
     // Auto-focus back button for keyboard users
     document.getElementById('backBtn').focus();

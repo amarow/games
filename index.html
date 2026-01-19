@@ -2,11 +2,33 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Arcade Sammlung</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
 
+        /* Wrapper / Game Container styles */
+        #game-wrapper {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 2000;
+            display: none;
+        }
+
+        #game-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Original Styles */
         body {
             font-family: 'Orbitron', sans-serif;
             background-color: #050505;
@@ -21,6 +43,9 @@
                 linear-gradient(rgba(0, 20, 0, 0.1) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 20, 0, 0.1) 1px, transparent 1px);
             background-size: 20px 20px;
+            
+            /* Prevent scrolling in app mode */
+            overscroll-behavior: none;
         }
 
         h1 {
@@ -142,13 +167,18 @@
 </head>
 <body>
 
+    <!-- Kiosk Mode Wrapper -->
+    <div id="game-wrapper">
+        <iframe id="game-frame" src="about:blank"></iframe>
+    </div>
+
     <div class="scanlines"></div>
 
     <h1>ARCADE COLLECTION</h1>
 
     <div class="grid-container">
         <!-- Galaga -->
-        <a href="space-invaders/space_invaders_galaga.html" class="game-card">
+        <a href="#" onclick="launchGame('space-invaders/space_invaders_galaga.html'); return false;" class="game-card">
             <div class="icon-area">
                 <svg viewBox="0 0 100 100" class="icon-galaga">
                     <path d="M50 20 L60 40 L50 35 L40 40 Z" />
@@ -161,7 +191,7 @@
         </a>
 
         <!-- Galaga Vector -->
-        <a href="space-invaders/space_invaders_galaga_vector.html" class="game-card">
+        <a href="#" onclick="launchGame('space-invaders/space_invaders_galaga_vector.html'); return false;" class="game-card">
             <span class="badge">VECTREX</span>
             <div class="icon-area">
                 <svg viewBox="0 0 100 100" class="icon-vector">
@@ -175,7 +205,7 @@
         </a>
 
         <!-- Space Invaders -->
-        <a href="space-invaders/space_invaders.html" class="game-card">
+        <a href="#" onclick="launchGame('space-invaders/space_invaders.html'); return false;" class="game-card">
             <span class="badge">CLASSIC</span>
             <div class="icon-area">
                 <svg viewBox="0 0 11 8" class="icon-invader">
@@ -196,7 +226,7 @@
 
                 <!-- Death Star -->
 
-                <a href="death-star/index.html" class="game-card">
+                <a href="#" onclick="launchGame('death-star/index.html'); return false;" class="game-card">
 
                     <span class="badge">NEW</span>
 
@@ -232,7 +262,7 @@
 
                 <!-- Controls / Help -->
 
-                <a href="help.html" class="game-card">
+                <a href="#" onclick="launchGame('help.html'); return false;" class="game-card">
 
                     <div class="icon-area">
 
@@ -261,6 +291,41 @@
             </div>
 
 <script>
+    // --- KIOSK / WRAPPER LOGIC ---
+    function launchGame(url) {
+        const wrapper = document.getElementById('game-wrapper');
+        const frame = document.getElementById('game-frame');
+        
+        // On mobile, force fullscreen on the main document
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+             if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+        }
+
+        frame.src = url;
+        wrapper.style.display = 'block';
+        frame.focus();
+    }
+
+    function closeGame() {
+        const wrapper = document.getElementById('game-wrapper');
+        const frame = document.getElementById('game-frame');
+        
+        wrapper.style.display = 'none';
+        frame.src = 'about:blank';
+        // We stay in fullscreen if we are already in it
+    }
+
+    // Listen for messages from games
+    window.addEventListener('message', (event) => {
+        if (event.data === 'closeGame') {
+            closeGame();
+        }
+    });
+
+    // --- END KIOSK LOGIC ---
+
     const FULLSCREEN_KEY = 'fullscreen-state';
 
     function isFullscreen() { return document.fullscreenElement != null; }

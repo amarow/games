@@ -635,7 +635,12 @@
             state.particles = [];
             state.player = null;
         } else if (state.screen === 'START') {
-            window.location.href = '../index.html';
+            // Check if inside wrapper
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage('closeGame', '*');
+            } else {
+                window.location.href = '../index.html';
+            }
         }
     }
 

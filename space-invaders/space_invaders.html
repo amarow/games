@@ -292,7 +292,11 @@
             state.level = 1;
 
         } else if (state.gameState === 'START') {
-            window.location.href = '../index.html';
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage('closeGame', '*');
+            } else {
+                window.location.href = '../index.html';
+            }
         }
     }
 

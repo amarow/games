@@ -506,7 +506,11 @@ window.addEventListener('keydown', (e) => {
             }
         }
         if (e.code === 'Escape') {
-            window.location.href = '../index.html';
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage('closeGame', '*');
+            } else {
+                window.location.href = '../index.html';
+            }
         }
     }
 });
@@ -540,7 +544,11 @@ if (isMobile()) {
         const touchEndX = e.changedTouches[0].screenX;
         
         if (touchEndY - touchStartY > 100 && Math.abs(touchEndX - touchStartX) < 100) {
-             window.location.href = '../index.html';
+             if (window.parent && window.parent !== window) {
+                window.parent.postMessage('closeGame', '*');
+            } else {
+                window.location.href = '../index.html';
+            }
         }
     }, { passive: false });
 
