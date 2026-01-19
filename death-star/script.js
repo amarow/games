@@ -512,5 +512,80 @@ window.addEventListener('keydown', (e) => {
 });
 window.addEventListener('keyup', (e) => keys[e.code] = false);
 
+// --- MOBILE CONTROLS ---
+function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024);
+}
+
+if (isMobile()) {
+    // Auto-fullscreen on first interaction (touchend/click are safer for user gestures)
+    const goFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
+    };
+    document.addEventListener('touchend', goFullscreen, { passive: false });
+    document.addEventListener('click', goFullscreen, { passive: false });
+
+    // Swipe Down for Escape
+    let touchStartY = 0;
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => {
+        touchStartY = e.changedTouches[0].screenY;
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: false });
+
+    document.addEventListener('touchend', e => {
+        const touchEndY = e.changedTouches[0].screenY;
+        const touchEndX = e.changedTouches[0].screenX;
+        
+        if (touchEndY - touchStartY > 100 && Math.abs(touchEndX - touchStartX) < 100) {
+             window.location.href = '../index.html';
+        }
+    }, { passive: false });
+
+    const mobileControls = document.getElementById('mobile-controls');
+    if (mobileControls) {
+        mobileControls.style.display = 'flex';
+        
+        const setupBtn = (id, code) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            
+            const activate = (e) => {
+                e.preventDefault();
+                keys[code] = true;
+                btn.classList.add('active');
+                
+                // Special handling for Space (Restart/Fire)
+                if (code === 'Space') {
+                    if (gameState === 'win' || gameState === 'lose') {
+                        init();
+                    }
+                }
+            };
+
+            const deactivate = (e) => {
+                e.preventDefault();
+                keys[code] = false;
+                btn.classList.remove('active');
+            };
+
+            btn.addEventListener('touchstart', activate, { passive: false });
+            btn.addEventListener('touchend', deactivate, { passive: false });
+            btn.addEventListener('touchcancel', deactivate, { passive: false });
+            btn.addEventListener('mousedown', activate);
+            btn.addEventListener('mouseup', deactivate);
+            btn.addEventListener('mouseleave', deactivate);
+        };
+
+        setupBtn('btnUp', 'ArrowUp');
+        setupBtn('btnDown', 'ArrowDown');
+        setupBtn('btnLeft', 'ArrowLeft');
+        setupBtn('btnRight', 'ArrowRight');
+        setupBtn('btnFire', 'Space');
+    }
+}
+
 init();
 animate();

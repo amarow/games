@@ -8,6 +8,7 @@ body {
     height: 100vh;
     display: block; /* Remove flex centering */
     font-family: 'Orbitron', sans-serif;
+    touch-action: none; /* Prevent browser zoom/scroll */
 }
 
 #game-container {
@@ -21,4 +22,68 @@ canvas {
     display: block;
     width: 100%;
     height: 100%;
+}
+
+/* Mobile Controls */
+#mobile-controls {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    height: 180px; /* Taller for D-Pad */
+    z-index: 100;
+    pointer-events: none;
+    justify-content: space-between;
+    padding: 0 20px;
+    box-sizing: border-box;
+    align-items: center; /* Center vertically */
+}
+
+.d-pad-container {
+    display: grid;
+    grid-template-columns: 50px 50px 50px;
+    grid-template-rows: 50px 50px 50px;
+    pointer-events: auto;
+}
+
+.touch-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 24px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.touch-btn:active, .touch-btn.active {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.d-pad-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+}
+
+#btnUp { grid-column: 2; grid-row: 1; }
+#btnLeft { grid-column: 1; grid-row: 2; }
+#btnRight { grid-column: 3; grid-row: 2; }
+#btnDown { grid-column: 2; grid-row: 3; }
+
+.fire-btn-container {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+}
+
+#btnFire {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    font-size: 30px;
 }

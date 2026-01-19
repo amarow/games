@@ -95,6 +95,54 @@
             cursor: pointer;
             text-decoration: underline;
         }
+
+        /* Mobile Controls */
+        #mobile-controls {
+            display: none; /* Hidden by default, shown via JS on mobile */
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            z-index: 100;
+            pointer-events: none; /* Let touches pass through to buttons */
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        .control-group {
+            pointer-events: auto;
+            display: flex;
+            gap: 20px;
+        }
+
+        .touch-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 30px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .touch-btn:active, .touch-btn.active {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Adjust d-pad look */
+        .d-pad-btn {
+            border-radius: 10px;
+            width: 70px;
+            height: 70px;
+        }
     </style>
 </head>
 <body>
@@ -125,6 +173,17 @@
         <div id="levelScreen" class="message-box">
             <h2 id="levelTitle" style="color:#00ffff">STAGE 1</h2>
         </div>
+    </div>
+</div>
+
+<!-- Mobile Touch Controls -->
+<div id="mobile-controls">
+    <div class="control-group">
+        <div class="touch-btn d-pad-btn" id="btnLeft">←</div>
+        <div class="touch-btn d-pad-btn" id="btnRight">→</div>
+    </div>
+    <div class="control-group">
+        <div class="touch-btn" id="btnFire">🔥</div>
     </div>
 </div>
 
@@ -560,6 +619,26 @@
 
     // --- INPUT ---
     const keys = { ArrowLeft: false, ArrowRight: false, Space: false, Control: false };
+    
+    function handleEscape() {
+        if (state.screen === 'PLAYING' || state.screen === 'GAMEOVER' || state.screen === 'LEVEL_INTRO') {
+            state.screen = 'START';
+            document.getElementById('startScreen').style.display = 'block';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            const levelScreen = document.getElementById('levelScreen');
+            if (levelScreen) levelScreen.style.display = 'none';
+
+            // Reset game entities
+            state.enemies = [];
+            state.bullets = [];
+            state.enemyBullets = [];
+            state.particles = [];
+            state.player = null;
+        } else if (state.screen === 'START') {
+            window.location.href = '../index.html';
+        }
+    }
+
     window.addEventListener('keydown', (e) => {
         if(e.code === 'ArrowLeft') keys.ArrowLeft = true;
         if(e.code === 'ArrowRight') keys.ArrowRight = true;
@@ -568,22 +647,7 @@
         
         if (e.code === 'Escape') {
             e.preventDefault();
-            if (state.screen === 'PLAYING' || state.screen === 'GAMEOVER' || state.screen === 'LEVEL_INTRO') {
-                state.screen = 'START';
-                document.getElementById('startScreen').style.display = 'block';
-                document.getElementById('gameOverScreen').style.display = 'none';
-                const levelScreen = document.getElementById('levelScreen');
-                if (levelScreen) levelScreen.style.display = 'none';
-
-                // Reset game entities
-                state.enemies = [];
-                state.bullets = [];
-                state.enemyBullets = [];
-                state.particles = [];
-                state.player = null;
-            } else if (state.screen === 'START') {
-                window.location.href = '../index.html';
-            }
+            handleEscape();
         }
 
         if(e.code === 'Space') {
@@ -595,6 +659,86 @@
     window.addEventListener('keyup', (e) => { if(e.code === 'ArrowLeft') keys.ArrowLeft = false; if(e.code === 'ArrowRight') keys.ArrowRight = false; if(e.code === 'Space') keys.Space = false; });
     document.getElementById('startBtn').addEventListener('click', () => { initAudio(); initGame(); document.getElementById('startScreen').style.display = 'none'; state.score = 0; state.lives = 3; startLevel(1); });
     document.getElementById('restartBtn').addEventListener('click', () => { document.getElementById('gameOverScreen').style.display = 'none'; state.score = 0; state.lives = 3; startLevel(1); });
+
+    // --- MOBILE CONTROLS ---
+    function isMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024);
+    }
+
+    if (isMobile()) {
+        // Auto-fullscreen on first interaction (touchend/click are safer for user gestures)
+        const goFullscreen = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+        };
+        document.addEventListener('touchend', goFullscreen, { passive: false });
+        document.addEventListener('click', goFullscreen, { passive: false });
+        
+        // Swipe Down for Escape
+        let touchStartY = 0;
+        let touchStartX = 0;
+        document.addEventListener('touchstart', e => {
+            touchStartY = e.changedTouches[0].screenY;
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: false });
+
+        document.addEventListener('touchend', e => {
+            const touchEndY = e.changedTouches[0].screenY;
+            const touchEndX = e.changedTouches[0].screenX;
+            
+            // Thresholds: min 50px down, max 100px horizontal deviation (to avoid diagonal swipes)
+            if (touchEndY - touchStartY > 100 && Math.abs(touchEndX - touchStartX) < 100) {
+                handleEscape();
+            }
+        }, { passive: false });
+        
+        const mobileControls = document.getElementById('mobile-controls');
+        if (mobileControls) {
+            mobileControls.style.display = 'flex';
+            
+            const setupBtn = (id, key) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                
+                const activate = (e) => {
+                    e.preventDefault(); // Prevent scrolling/zooming
+                    keys[key] = true;
+                    btn.classList.add('active');
+                    
+                    // Auto-start game if on start screen and fire is pressed
+                    if (key === 'Space' && state.screen === 'START') {
+                        initAudio(); initGame(); 
+                        document.getElementById('startScreen').style.display = 'none'; 
+                        state.score = 0; state.lives = 3; startLevel(1);
+                    }
+                    // Restart if game over
+                    if (key === 'Space' && state.screen === 'GAMEOVER') {
+                        document.getElementById('gameOverScreen').style.display = 'none'; 
+                        state.score = 0; state.lives = 3; startLevel(1);
+                    }
+                };
+
+                const deactivate = (e) => {
+                    e.preventDefault();
+                    keys[key] = false;
+                    btn.classList.remove('active');
+                };
+
+                btn.addEventListener('touchstart', activate, { passive: false });
+                btn.addEventListener('touchend', deactivate, { passive: false });
+                btn.addEventListener('touchcancel', deactivate, { passive: false });
+                // Mouse fallback for testing on desktop with mobile emulation
+                btn.addEventListener('mousedown', activate);
+                btn.addEventListener('mouseup', deactivate);
+                btn.addEventListener('mouseleave', deactivate);
+            };
+
+            setupBtn('btnLeft', 'ArrowLeft');
+            setupBtn('btnRight', 'ArrowRight');
+            setupBtn('btnFire', 'Space');
+        }
+    }
 
     let lastTime = 0;
     initGame(); 

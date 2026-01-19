@@ -83,6 +83,45 @@
             min-width: 100px;
         }
 
+        /* Mobile Specific Sections */
+        .mobile-only {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+                margin-bottom: 20px;
+            }
+
+            .controls-container {
+                padding: 20px;
+            }
+
+            .key-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .keys {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .mobile-only {
+                display: block;
+            }
+            
+            .desktop-only {
+                display: none;
+            }
+        }
+
         .back-btn {
             margin-top: 40px;
             text-decoration: none;
@@ -123,35 +162,73 @@
 
     <div class="controls-container">
         
-        <div class="key-row">
-            <div class="action">Navigieren / Steuern</div>
-            <div class="keys">
-                <div class="key">↑</div>
-                <div class="key">←</div>
-                <div class="key">↓</div>
-                <div class="key">→</div>
+        <!-- Desktop Controls -->
+        <div class="desktop-only">
+            <div class="key-row">
+                <div class="action">Navigieren / Steuern</div>
+                <div class="keys">
+                    <div class="key">↑</div>
+                    <div class="key">←</div>
+                    <div class="key">↓</div>
+                    <div class="key">→</div>
+                </div>
+            </div>
+
+            <div class="key-row">
+                <div class="action">Start / Feuern</div>
+                <div class="keys">
+                    <div class="key wide">SPACE</div>
+                    <div class="key">ENTER</div>
+                </div>
+            </div>
+
+            <div class="key-row">
+                <div class="action">Vollbild (Fullscreen)</div>
+                <div class="keys">
+                    <div class="key">F</div>
+                </div>
+            </div>
+
+            <div class="key-row">
+                <div class="action">Zurück zum Menü</div>
+                <div class="keys">
+                    <div class="key">ESC</div>
+                </div>
             </div>
         </div>
 
-        <div class="key-row">
-            <div class="action">Start / Feuern</div>
-            <div class="keys">
-                <div class="key wide">SPACE</div>
-                <div class="key">ENTER</div>
+        <!-- Mobile Controls -->
+        <div class="mobile-only">
+            <div class="key-row">
+                <div class="action">Steuern (Links/Rechts)</div>
+                <div class="keys">
+                    <div class="key">←</div>
+                    <div class="key">→</div>
+                    <span style="font-size: 0.8rem; align-self: center;">(On-Screen Buttons)</span>
+                </div>
             </div>
-        </div>
 
-        <div class="key-row">
-            <div class="action">Vollbild (Fullscreen)</div>
-            <div class="keys">
-                <div class="key">F</div>
+            <div class="key-row">
+                <div class="action">Feuern / Start</div>
+                <div class="keys">
+                    <div class="key">🔥</div>
+                    <span style="font-size: 0.8rem; align-self: center;">(On-Screen Button)</span>
+                </div>
             </div>
-        </div>
 
-        <div class="key-row">
-            <div class="action">Zurück zum Menü</div>
-            <div class="keys">
-                <div class="key">ESC</div>
+            <div class="key-row">
+                <div class="action">Zurück / ESC</div>
+                <div class="keys">
+                    <div class="key">SWIPE DOWN</div>
+                    <span style="font-size: 0.8rem; align-self: center;">(Nach unten wischen)</span>
+                </div>
+            </div>
+
+            <div class="key-row">
+                <div class="action">Vollbild</div>
+                <div class="keys">
+                    <span style="font-size: 0.8rem;">Aktiviert sich automatisch bei Berührung</span>
+                </div>
             </div>
         </div>
 
@@ -165,6 +242,20 @@
             window.location.href = 'index.html';
         }
     });
+
+    // Swipe Down for Back
+    let touchStartY = 0;
+    document.addEventListener('touchstart', e => {
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', e => {
+        const touchEndY = e.changedTouches[0].screenY;
+        if (touchEndY - touchStartY > 100) {
+            window.location.href = 'index.html';
+        }
+    }, { passive: true });
+
     // Auto-focus back button for keyboard users
     document.getElementById('backBtn').focus();
 </script>
