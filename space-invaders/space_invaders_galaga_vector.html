@@ -99,17 +99,18 @@
 
         /* Mobile Controls */
         #mobile-controls {
-            display: none;
+            display: none; /* Hidden by default, shown via JS on mobile */
             position: fixed;
-            bottom: 20px;
+            bottom: 0;
             left: 0;
             width: 100%;
-            height: 120px;
+            height: 180px;
             z-index: 100;
-            pointer-events: none;
+            pointer-events: none; /* Let touches pass through to buttons */
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 20px 20px 20px;
             box-sizing: border-box;
+            background: linear-gradient(to top, rgba(0, 50, 0, 0.3), transparent);
         }
 
         .control-group {
@@ -178,12 +179,15 @@
 
 <!-- Mobile Touch Controls -->
 <div id="mobile-controls">
-    <div class="control-group">
-        <div class="touch-btn d-pad-btn" id="btnLeft">←</div>
-        <div class="touch-btn d-pad-btn" id="btnRight">→</div>
+    <div class="control-group" style="width: 25%; height: 100%;">
+        <div id="joystick-zone" style="width: 100%; height: 100%; position: relative; display: flex; align-items: center;">
+             <div id="joystick-track" style="width: 100%; height: 40px; background: rgba(0, 255, 0, 0.15); border: 2px solid rgba(0, 255, 0, 0.3); border-radius: 20px; position: relative;">
+                <div id="joystick-thumb" style="width: 50px; height: 50px; background: rgba(0, 255, 0, 0.2); border: 2px solid #0f0; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px rgba(0,255,0,0.5);"></div>
+             </div>
+        </div>
     </div>
-    <div class="control-group">
-        <div class="touch-btn" id="btnFire">🔥</div>
+    <div class="control-group" style="height: 100%; display: flex; align-items: center;">
+        <div class="touch-btn" id="btnFire" style="border-color: #0f0; color: #0f0; text-shadow: 0 0 5px #0f0;">🔥</div>
     </div>
 </div>
 
@@ -326,6 +330,7 @@
         enemyBullets: [],
         particles: [],
         frame: 0,
+        touchNormalizedX: null,
         active: false
     };
 
@@ -421,13 +426,25 @@
         
         update(dt) {
             if (this.dead) return;
-            // Normalize speed with dt
-            const moveSpeed = this.speed * dt;
+            
             let totalWidth = this.width + this.extraShips * 24;
-            if (keys.ArrowLeft && this.x > 10) this.x -= moveSpeed;
-            if (keys.ArrowRight && this.x < canvas.width - 10 - totalWidth) this.x += moveSpeed;
+            
+            if (state.touchNormalizedX !== null) {
+                // Direct 1:1 mapping from slider to screen position
+                const minX = 10;
+                const maxX = canvas.width - 10 - totalWidth;
+                const range = maxX - minX;
+                // Map -1..1 normalized slider to minX..maxX screen
+                const targetX = minX + (state.touchNormalizedX + 1) / 2 * range;
+                
+                // Use a very high interpolation for "direct" feel with minimal jitter
+                this.x += (targetX - this.x) * 0.9;
+            } else {
+                const moveSpeed = this.speed * dt;
+                if (keys.ArrowLeft && this.x > 10) this.x -= moveSpeed;
+                if (keys.ArrowRight && this.x < canvas.width - 10 - totalWidth) this.x += moveSpeed;
+            }
 
-            // Shooting Logic
             if (this.cooldown > 0) this.cooldown -= 1 * dt;
             
             if (keys.Space && this.cooldown <= 0) {
@@ -1039,9 +1056,71 @@
                 btn.addEventListener('mouseleave', deactivate);
             };
 
-            setupBtn('btnLeft', 'ArrowLeft');
-            setupBtn('btnRight', 'ArrowRight');
             setupBtn('btnFire', 'Space');
+
+            // --- MOVEMENT SLIDER LOGIC ---
+            const zone = document.getElementById('joystick-zone');
+            const track = document.getElementById('joystick-track');
+            const thumb = document.getElementById('joystick-thumb');
+            
+            if (zone && track && thumb) {
+                const handleMove = (e) => {
+                    if (e.cancelable) e.preventDefault();
+                    
+                    let clientX;
+                    if (e.targetTouches && e.targetTouches.length > 0) {
+                        clientX = e.targetTouches[0].clientX;
+                    } else if (e.clientX) {
+                        clientX = e.clientX; // Mouse fallback
+                    } else {
+                        return;
+                    }
+
+                    const rect = track.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    
+                    // Calculate offset from center
+                    let delta = clientX - centerX;
+                    
+                    // Clamp visual thumb movement
+                    const maxDist = rect.width / 2; 
+                    const clampedDelta = Math.max(-maxDist, Math.min(maxDist, delta));
+                    
+                    thumb.style.transform = `translate(calc(-50% + ${clampedDelta}px), -50%)`;
+                    
+                    // Set normalized value for 1:1 movement (-1 to 1)
+                    state.touchNormalizedX = clampedDelta / maxDist;
+                    
+                    // Direct movement logic for "keys" state (fallback)
+                    const deadzone = 2;
+                    if (delta < -deadzone) {
+                        keys.ArrowLeft = true; keys.ArrowRight = false;
+                    } else if (delta > deadzone) {
+                        keys.ArrowRight = true; keys.ArrowLeft = false;
+                    } else {
+                        keys.ArrowLeft = false; keys.ArrowRight = false;
+                    }
+                };
+                
+                const handleEnd = (e) => {
+                    if (e.cancelable) e.preventDefault();
+                    thumb.style.transform = `translate(-50%, -50%)`; // Reset to center
+                    state.touchNormalizedX = null;
+                    keys.ArrowLeft = false;
+                    keys.ArrowRight = false;
+                };
+
+                zone.addEventListener('touchstart', handleMove, { passive: false });
+                zone.addEventListener('touchmove', handleMove, { passive: false });
+                zone.addEventListener('touchend', handleEnd, { passive: false });
+                zone.addEventListener('touchcancel', handleEnd, { passive: false });
+                
+                // Mouse fallback
+                let isDragging = false;
+                zone.addEventListener('mousedown', (e) => { isDragging = true; handleMove(e); });
+                window.addEventListener('mousemove', (e) => { if(isDragging) handleMove(e); });
+                window.addEventListener('mouseup', (e) => { if(isDragging) { isDragging = false; handleEnd(e); } });
+            }
         }
     }
 </script>

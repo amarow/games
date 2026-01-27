@@ -11,13 +11,14 @@
         <canvas id="game-canvas" width="800" height="600"></canvas>
         
         <div id="mobile-controls">
-            <div class="d-pad-container">
-                <div class="touch-btn d-pad-btn" id="btnUp">↑</div>
-                <div class="touch-btn d-pad-btn" id="btnLeft">←</div>
-                <div class="touch-btn d-pad-btn" id="btnRight">→</div>
-                <div class="touch-btn d-pad-btn" id="btnDown">↓</div>
+            <div class="control-group" style="width: 180px; height: 180px; pointer-events: auto;">
+                <div id="joystick-zone" style="width: 100%; height: 100%; position: relative; display: flex; align-items: center; justify-content: center;">
+                     <div id="joystick-base" style="width: 120px; height: 120px; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; position: relative;">
+                        <div id="joystick-thumb" style="width: 50px; height: 50px; background: rgba(255, 255, 255, 0.5); border: 2px solid #fff; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px rgba(0,0,0,0.5);"></div>
+                     </div>
+                </div>
             </div>
-            <div class="fire-btn-container">
+            <div class="fire-btn-container" style="pointer-events: auto;">
                 <div class="touch-btn" id="btnFire">🔥</div>
             </div>
         </div>

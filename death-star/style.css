@@ -28,62 +28,43 @@ canvas {
 #mobile-controls {
     display: none;
     position: fixed;
-    bottom: 20px;
+    bottom: 0;
     left: 0;
     width: 100%;
-    height: 180px; /* Taller for D-Pad */
+    height: 200px; /* Taller area for joystick */
     z-index: 100;
     pointer-events: none;
     justify-content: space-between;
-    padding: 0 20px;
-    box-sizing: border-box;
     align-items: center; /* Center vertically */
+    padding: 20px 40px; /* More padding */
+    box-sizing: border-box;
+    background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
 }
 
-.d-pad-container {
-    display: grid;
-    grid-template-columns: 50px 50px 50px;
-    grid-template-rows: 50px 50px 50px;
+.fire-btn-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     pointer-events: auto;
 }
 
 .touch-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    width: 90px;
+    height: 90px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
     color: white;
-    font-size: 24px;
+    font-size: 32px;
     user-select: none;
-    -webkit-user-select: none;
     touch-action: manipulation;
+    backdrop-filter: blur(2px);
 }
 
 .touch-btn:active, .touch-btn.active {
-    background: rgba(255, 255, 255, 0.5);
-}
-
-.d-pad-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-}
-
-#btnUp { grid-column: 2; grid-row: 1; }
-#btnLeft { grid-column: 1; grid-row: 2; }
-#btnRight { grid-column: 3; grid-row: 2; }
-#btnDown { grid-column: 2; grid-row: 3; }
-
-.fire-btn-container {
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-}
-
-#btnFire {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    font-size: 30px;
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(0.95);
 }

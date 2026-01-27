@@ -16,6 +16,7 @@ let particles = [];
 let trenchObstacles = [];
 let enemies = []; 
 let keys = {};
+let joystickState = { x: 0, y: 0, active: false };
 let frame = 0;
 let gameState = 'playing'; // 'playing', 'escaping', 'win', 'lose'
 let escapeTimer = 0;
@@ -58,10 +59,19 @@ class Player {
     update() {
         if (!this.alive) return;
         const moveSpeedX = 6; const moveSpeedY = 5;
+        
+        // Keyboard Input
         if (keys['ArrowLeft']) this.x -= moveSpeedX;
         if (keys['ArrowRight']) this.x += moveSpeedX;
         if (keys['ArrowUp']) this.y -= moveSpeedY;
         if (keys['ArrowDown']) this.y += moveSpeedY;
+        
+        // Analog Joystick Input (Additive)
+        if (joystickState.active) {
+            this.x += joystickState.x * moveSpeedX * 1.5; // 1.5x multiplier for responsive feel
+            this.y += joystickState.y * moveSpeedY * 1.5;
+        }
+
         const margin = 20;
         this.x = Math.max(-(TRENCH_WIDTH - margin), Math.min(TRENCH_WIDTH - margin, this.x));
         this.y = Math.max(-(TRENCH_HEIGHT - margin), Math.min(TRENCH_HEIGHT - margin, this.y));
@@ -556,42 +566,85 @@ if (isMobile()) {
     if (mobileControls) {
         mobileControls.style.display = 'flex';
         
-        const setupBtn = (id, code) => {
-            const btn = document.getElementById(id);
-            if (!btn) return;
-            
-            const activate = (e) => {
+        // --- FIRE BUTTON SETUP ---
+        const btnFire = document.getElementById('btnFire');
+        if (btnFire) {
+            const fire = (e) => {
                 e.preventDefault();
-                keys[code] = true;
-                btn.classList.add('active');
-                
-                // Special handling for Space (Restart/Fire)
-                if (code === 'Space') {
-                    if (gameState === 'win' || gameState === 'lose') {
-                        init();
-                    }
+                keys['Space'] = true;
+                btnFire.classList.add('active');
+                if (gameState === 'win' || gameState === 'lose') init();
+            };
+            const stopFire = (e) => {
+                e.preventDefault();
+                keys['Space'] = false;
+                btnFire.classList.remove('active');
+            };
+            btnFire.addEventListener('touchstart', fire, {passive:false});
+            btnFire.addEventListener('touchend', stopFire, {passive:false});
+            btnFire.addEventListener('mousedown', fire);
+            btnFire.addEventListener('mouseup', stopFire);
+        }
+
+        // --- 360 JOYSTICK LOGIC ---
+        const zone = document.getElementById('joystick-zone');
+        const thumb = document.getElementById('joystick-thumb');
+        
+        if (zone && thumb) {
+            const handleMove = (e) => {
+                if(e.cancelable) e.preventDefault();
+                let cx, cy;
+                if(e.targetTouches && e.targetTouches.length > 0) {
+                    cx = e.targetTouches[0].clientX;
+                    cy = e.targetTouches[0].clientY;
+                } else {
+                    cx = e.clientX; cy = e.clientY;
                 }
+
+                const rect = zone.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const maxRadius = 40; // Max movement radius for thumb
+                
+                let dx = cx - centerX;
+                let dy = cy - centerY;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                
+                // Normalize logic
+                if (distance > maxRadius) {
+                    const ratio = maxRadius / distance;
+                    dx *= ratio;
+                    dy *= ratio;
+                }
+                
+                // Visual update
+                thumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                
+                // Logic update (-1 to 1)
+                joystickState.x = dx / maxRadius;
+                joystickState.y = dy / maxRadius;
+                joystickState.active = true;
             };
 
-            const deactivate = (e) => {
-                e.preventDefault();
-                keys[code] = false;
-                btn.classList.remove('active');
+            const handleEnd = (e) => {
+                if(e.cancelable) e.preventDefault();
+                thumb.style.transform = `translate(-50%, -50%)`;
+                joystickState.x = 0;
+                joystickState.y = 0;
+                joystickState.active = false;
             };
 
-            btn.addEventListener('touchstart', activate, { passive: false });
-            btn.addEventListener('touchend', deactivate, { passive: false });
-            btn.addEventListener('touchcancel', deactivate, { passive: false });
-            btn.addEventListener('mousedown', activate);
-            btn.addEventListener('mouseup', deactivate);
-            btn.addEventListener('mouseleave', deactivate);
-        };
-
-        setupBtn('btnUp', 'ArrowUp');
-        setupBtn('btnDown', 'ArrowDown');
-        setupBtn('btnLeft', 'ArrowLeft');
-        setupBtn('btnRight', 'ArrowRight');
-        setupBtn('btnFire', 'Space');
+            zone.addEventListener('touchstart', handleMove, {passive:false});
+            zone.addEventListener('touchmove', handleMove, {passive:false});
+            zone.addEventListener('touchend', handleEnd, {passive:false});
+            
+            // Mouse fallback
+            let dragging = false;
+            zone.addEventListener('mousedown', (e) => { dragging = true; handleMove(e); });
+            window.addEventListener('mousemove', (e) => { if(dragging) handleMove(e); });
+            window.addEventListener('mouseup', (e) => { if(dragging) { dragging = false; handleEnd(e); }});
+        }
     }
 }
 
