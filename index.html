@@ -169,7 +169,7 @@
 
     <!-- Kiosk Mode Wrapper -->
     <div id="game-wrapper">
-        <iframe id="game-frame" src="about:blank"></iframe>
+        <iframe id="game-frame" src="about:blank" allowfullscreen></iframe>
     </div>
 
     <div class="scanlines"></div>
@@ -290,22 +290,37 @@
 
             </div>
 
+    <div class="version-footer" style="margin-top: 50px; color: #555; font-family: monospace; font-size: 14px;">
+        v1.2.1
+    </div>
+
 <script>
     // --- KIOSK / WRAPPER LOGIC ---
     function launchGame(url) {
         const wrapper = document.getElementById('game-wrapper');
         const frame = document.getElementById('game-frame');
         
-        // On mobile, force fullscreen on the main document
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-             if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => {});
+        // 1. Show wrapper and start loading immediately
+        wrapper.style.display = 'block';
+        frame.src = url;
+
+        // 2. Try fullscreen as an optional enhancement
+        try {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                const docEl = document.documentElement;
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen().catch(() => {});
+                } else if (docEl.webkitRequestFullscreen) {
+                    docEl.webkitRequestFullscreen();
+                }
             }
+        } catch (e) {
+            // Silently fail fullscreen if not supported
         }
 
-        frame.src = url;
-        wrapper.style.display = 'block';
-        frame.focus();
+        // 3. Ensure focus for keyboard controls
+        setTimeout(() => frame.focus(), 100);
     }
 
     function closeGame() {
@@ -314,7 +329,6 @@
         
         wrapper.style.display = 'none';
         frame.src = 'about:blank';
-        // We stay in fullscreen if we are already in it
     }
 
     // Listen for messages from games
