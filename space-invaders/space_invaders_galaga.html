@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Galaga 1981 - Arcade Clone</title>
     <style>
         body {
@@ -602,30 +603,27 @@
 
     // --- RESIZE LOGIC ---
     function handleResize() {
-        const container = document.getElementById('gameContainer');
-        const targetWidth = 560; // Base width
-        const targetHeight = 720; // Base height
-        
-        const winW = window.innerWidth;
-        const winH = window.innerHeight;
-        
-        // Calculate scale to fit within the window with some margin
-        const scaleX = winW / targetWidth;
-        const scaleY = winH / targetHeight;
-        let scale = Math.min(scaleX, scaleY);
-        
-        // Optional: limit max scale if desired, but for fullscreen we usually want max fill
-        // scale = Math.min(scale, 2); 
-
-        // Apply scale
-        container.style.transform = `scale(${scale})`;
-        
-        // Center the container handled by body flex, but we need to ensure the 
-        // scaled element doesn't cause overflow issues if logic is weird.
-        // With transform: scale, the layout size remains original.
+        // Small delay to ensure mobile browsers have updated dimensions
+        setTimeout(() => {
+            const container = document.getElementById('gameContainer');
+            const targetWidth = 560; // Base width
+            const targetHeight = 720; // Base height
+            
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+            
+            // Calculate scale to fit within the window
+            const scaleX = winW / targetWidth;
+            const scaleY = winH / targetHeight;
+            let scale = Math.min(scaleX, scaleY);
+            
+            // Apply scale
+            container.style.transform = `scale(${scale})`;
+        }, 100);
     }
     
     window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
     document.addEventListener('fullscreenchange', handleResize);
     
     // Set initial size on load

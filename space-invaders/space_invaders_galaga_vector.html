@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Galaga 1981 - Arcade Clone</title>
     <style>
         body {
@@ -842,30 +843,27 @@
 
     // --- RESIZE LOGIC ---
     function handleResize() {
-        const isFull = document.fullscreenElement != null;
-        if (state.isFullWidth === isFull) return; // Avoid redundant resizes
-
-        state.isFullWidth = isFull;
-        const oldW = canvas.width;
-        canvas.width = state.isFullWidth ? 1120 : 560;
-        const diff = (canvas.width - oldW) / 2;
-
-        // Reposition game elements
-        if (state.player) state.player.x += diff;
-        state.enemies.forEach(en => {
-            if (en.gridX) en.gridX += diff;
-            if(en.pathStart) en.pathStart.x += diff;
-            if(en.pathEnd) en.pathEnd.x += diff;
-            if(en.cp1) en.cp1.x += diff;
-            if(en.cp2) en.cp2.x += diff;
-            if(en.circleCenter) en.circleCenter.x += diff;
-            en.x += diff;
-        });
-        state.bullets.forEach(b => b.x += diff);
-        state.enemyBullets.forEach(b => b.x += diff);
-        state.stars = [];
-        initGame(); // Re-creates stars for the new width
+        // Small delay to ensure mobile browsers have updated dimensions
+        setTimeout(() => {
+            const container = document.getElementById('gameContainer');
+            const targetWidth = 560; // Base width
+            const targetHeight = 720; // Base height
+            
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+            
+            // Calculate scale to fit within the window
+            const scaleX = winW / targetWidth;
+            const scaleY = winH / targetHeight;
+            let scale = Math.min(scaleX, scaleY);
+            
+            // Apply scale
+            container.style.transform = `scale(${scale})`;
+        }, 100);
     }
+    
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
     document.addEventListener('fullscreenchange', handleResize);
     
     // Set initial size on load
