@@ -490,21 +490,27 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
+function fireWeapon() {
+    if (gameState === 'playing' && player.alive) {
+        const aimDist = 1500;
+        const targetX = player.x;
+        const targetY = player.y;
+        const targetZ = cameraZ + aimDist;
+        const spreadX = 400; const spreadY = 250;
+        const offsets = [{x: -spreadX, y: -spreadY}, {x: spreadX, y: -spreadY}, {x: -spreadX, y: spreadY}, {x: spreadX, y: spreadY}];
+        offsets.forEach(off => {
+             projectiles.push(new Projectile(player.x + off.x, player.y + off.y, cameraZ + 10, targetX, targetY, targetZ));
+        });
+        score -= 5;
+    }
+}
+
 window.addEventListener('keydown', (e) => {
     if (e.code === 'Space' && (gameState === 'win' || gameState === 'lose')) init();
     else {
         keys[e.code] = true;
-        if (e.code === 'Space' && gameState === 'playing' && player.alive) {
-            const aimDist = 1500;
-            const targetX = player.x; 
-            const targetY = player.y;
-            const targetZ = cameraZ + aimDist;
-            const spreadX = 400; const spreadY = 250;
-            const offsets = [{x: -spreadX, y: -spreadY}, {x: spreadX, y: -spreadY}, {x: -spreadX, y: spreadY}, {x: spreadX, y: spreadY}];
-            offsets.forEach(off => {
-                 projectiles.push(new Projectile(player.x + off.x, player.y + off.y, cameraZ + 10, targetX, targetY, targetZ));
-            });
-            score -= 5;
+        if (e.code === 'Space') {
+            fireWeapon();
         }
         if (e.code === 'KeyF') {
             if (!document.fullscreenElement) {
@@ -572,6 +578,7 @@ if (isMobile()) {
             const fire = (e) => {
                 e.preventDefault();
                 keys['Space'] = true;
+                fireWeapon();
                 btnFire.classList.add('active');
                 if (gameState === 'win' || gameState === 'lose') init();
             };
