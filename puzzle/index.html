@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="../manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Puzzle</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="scanlines"></div>
+    <a href="../index.html" class="back-link">&larr; Arcade</a>
+
+    <header>
+        <h1>PUZZLE</h1>
+    </header>
+
+    <div id="resume-banner">
+        <span id="resume-text"></span>
+        <div style="display:flex; gap:8px;">
+            <button id="resume-continue-btn">Fortsetzen</button>
+            <button id="resume-discard-btn">Neues Puzzle</button>
+        </div>
+    </div>
+
+    <div id="config-panel">
+        <div class="config-group">
+            <div class="config-label">Motiv</div>
+            <div class="motif-options" id="motif-options"></div>
+            <input type="file" id="upload-input" accept="image/*" style="display:none">
+        </div>
+        <div class="config-group">
+            <div class="config-label">Teile</div>
+            <div class="count-options" id="count-options"></div>
+        </div>
+        <button id="start-btn" disabled>Neues Puzzle starten</button>
+    </div>
+
+    <div id="load-error"></div>
+
+    <div id="progress-bar">
+        <span id="progress-label">0 / 0</span>
+        <div id="progress-track"><div id="progress-fill"></div></div>
+    </div>
+
+    <div id="game-area">
+        <div id="tray-toolbar">
+            <button id="new-batch-btn">Andere Teile</button>
+            <button id="auto-solve-btn">▶ Vorführung</button>
+            <button id="back-to-config-btn">Zur Konfiguration</button>
+        </div>
+        <div id="puzzle-stage">
+            <div id="tray-zone"></div>
+            <div id="board-zone">
+                <div id="board-ghost"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="credit-footer"></div>
+    <div class="version-footer">v1.0.0</div>
+
+    <script src="script.js"></script>
+</body>
+</html>

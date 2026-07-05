@@ -1,0 +1,416 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
+
+* { box-sizing: border-box; }
+
+html { height: 100%; }
+
+body {
+    margin: 0;
+    font-family: 'Orbitron', sans-serif;
+    background-color: #050505;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-image:
+        linear-gradient(rgba(0, 20, 0, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 20, 0, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    overscroll-behavior: none;
+}
+
+/* Waehrend eine Partie laeuft: Chrome minimieren, Spielflaeche fuellt den Viewport */
+body.in-game {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+body.in-game header,
+body.in-game .version-footer {
+    display: none;
+}
+
+.scanlines {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 2px;
+    pointer-events: none;
+    z-index: 500;
+}
+
+header {
+    padding: 16px 20px 8px;
+    text-align: center;
+}
+
+h1 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.4rem;
+    color: #00ff00;
+    text-shadow: 0 0 10px #00ff00;
+    margin: 0 0 4px;
+}
+
+.back-link {
+    position: fixed;
+    top: 14px;
+    left: 16px;
+    z-index: 50;
+    text-decoration: none;
+    color: #00ff00;
+    border: 2px solid #00ff00;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    background: rgba(0,0,0,0.6);
+}
+
+.back-link:hover { background: #00ff00; color: #000; }
+
+/* Waehrend des Spiels nach unten verschieben, damit die Toolbar oben nicht ueberlappt wird */
+body.in-game .back-link {
+    top: auto;
+    bottom: 10px;
+}
+
+/* --- Config panel --- */
+#config-panel {
+    max-width: 1100px;
+    margin: 0 auto 12px;
+    padding: 14px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.config-label {
+    font-size: 0.7rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.motif-options, .count-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.motif-btn, .count-btn {
+    background: #111;
+    border: 2px solid #333;
+    color: #ccc;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    transition: all 0.15s;
+}
+
+.motif-btn img {
+    display: block;
+    width: 60px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+.motif-btn.upload-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 68px;
+}
+
+.motif-btn:hover, .count-btn:hover { border-color: #00ff00; color: #fff; }
+.motif-btn.selected, .count-btn.selected {
+    border-color: #00ff00;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0,255,0,0.4);
+}
+
+#start-btn {
+    align-self: flex-end;
+    background: #003300;
+    border: 2px solid #00ff00;
+    color: #00ff00;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+#start-btn:hover { background: #00ff00; color: #000; }
+#start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+#load-error {
+    max-width: 700px;
+    margin: 0 auto 10px;
+    padding: 0 20px;
+    text-align: center;
+    color: #ff5555;
+    font-size: 0.8rem;
+    display: none;
+}
+
+#back-to-config-btn {
+    background: #111;
+    border: 2px solid #555;
+    color: #ccc;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+}
+#back-to-config-btn:hover { border-color: #00ff00; color: #fff; }
+
+#auto-solve-btn {
+    background: #111;
+    border: 2px solid #ffaa00;
+    color: #ffaa00;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+}
+#auto-solve-btn:hover { background: #ffaa00; color: #000; }
+#auto-solve-btn.active {
+    background: #ffaa00;
+    color: #000;
+    box-shadow: 0 0 10px rgba(255,170,0,0.6);
+}
+
+#tray-toolbar { gap: 10px; }
+
+/* --- Resume banner --- */
+#resume-banner {
+    max-width: 700px;
+    margin: 0 auto 10px;
+    padding: 12px 18px;
+    border: 2px solid #00ff00;
+    border-radius: 8px;
+    background: rgba(0,50,0,0.3);
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+}
+
+#resume-banner button {
+    background: transparent;
+    border: 2px solid #00ff00;
+    color: #00ff00;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+}
+#resume-banner button:hover { background: #00ff00; color: #000; }
+
+/* --- Progress --- */
+#progress-bar {
+    max-width: 1100px;
+    flex: 0 0 auto;
+    margin: 0 auto 8px;
+    padding: 0 20px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+#progress-track {
+    flex: 1;
+    height: 8px;
+    background: #222;
+    border-radius: 4px;
+    overflow: hidden;
+}
+#progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #00ff00;
+    box-shadow: 0 0 8px #00ff00;
+    transition: width 0.3s;
+}
+
+/* --- Game area --- */
+#game-area {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 4px 10px 8px;
+}
+
+#tray-toolbar {
+    display: flex;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+#new-batch-btn {
+    background: #111;
+    border: 2px solid #555;
+    color: #ccc;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+}
+#new-batch-btn:hover { border-color: #00ff00; color: #fff; }
+
+#puzzle-stage {
+    position: relative;
+    display: flex;
+    gap: 14px;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 300px;
+    touch-action: none;
+}
+
+#tray-zone {
+    flex: 0 0 34%;
+    background: repeating-linear-gradient(45deg, #0d0d0d, #0d0d0d 10px, #111 10px, #111 20px);
+    border: 2px solid #333;
+    border-radius: 10px;
+}
+
+#board-zone {
+    flex: 1;
+    position: relative;
+    border: 2px dashed #444;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+}
+
+#board-ghost {
+    position: absolute;
+    inset: 0;
+    opacity: 0.18;
+    background-size: cover;
+    background-position: center;
+    pointer-events: none;
+}
+
+.piece {
+    position: absolute;
+    top: 0;
+    left: 0;
+    touch-action: none;
+    cursor: grab;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+    will-change: left, top, transform;
+}
+
+.piece.dragging {
+    cursor: grabbing;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,0.8));
+    z-index: 9999 !important;
+}
+
+.piece.snap-anim {
+    transition: left 0.25s ease-out, top 0.25s ease-out, transform 0.25s ease-out;
+}
+
+.piece.placed {
+    cursor: default;
+}
+
+.piece.placed.pulse {
+    animation: piece-pulse 0.4s ease-out;
+}
+
+@keyframes piece-pulse {
+    0% { filter: drop-shadow(0 0 0px #00ff00); }
+    50% { filter: drop-shadow(0 0 14px #00ff00); }
+    100% { filter: drop-shadow(0 0 0px rgba(0,0,0,0)); }
+}
+
+/* Belohnungs-Effekt: Schlangenwelle beim Fertigstellen des Puzzles */
+.piece.wiggle {
+    animation: piece-wiggle 0.55s ease-in-out;
+    z-index: 200 !important;
+}
+
+@keyframes piece-wiggle {
+    0%   { transform: rotate(0deg) scale(1); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+    20%  { transform: rotate(-16deg) scale(1.12); filter: drop-shadow(0 0 12px #00ff00); }
+    45%  { transform: rotate(13deg) scale(1.16); filter: drop-shadow(0 0 18px #00ff00); }
+    70%  { transform: rotate(-8deg) scale(1.08); filter: drop-shadow(0 0 10px #00ff00); }
+    100% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+}
+
+/* --- Credit / footer --- */
+/* Fixiert in der Ecke statt im Fluss, damit sie keinen Platz von der Spielflaeche abzieht */
+#credit-footer {
+    position: fixed;
+    bottom: 6px;
+    right: 10px;
+    z-index: 40;
+    max-width: 60vw;
+    text-align: right;
+    font-size: 0.6rem;
+    color: #555;
+    background: rgba(0,0,0,0.5);
+    padding: 2px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+}
+#credit-footer:empty { display: none; }
+#credit-footer a { color: #777; }
+
+.version-footer {
+    text-align: center;
+    color: #444;
+    font-family: monospace;
+    font-size: 12px;
+    padding-bottom: 20px;
+}
+
+/* --- Mobile / narrow layout --- */
+@media (max-width: 820px) {
+    #puzzle-stage {
+        flex-direction: column;
+    }
+    #tray-zone {
+        flex: 0 0 32%;
+        min-height: 0;
+    }
+    #board-zone {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+    #config-panel {
+        gap: 12px;
+        padding: 10px 12px;
+    }
+    h1 { font-size: 1rem; }
+}
