@@ -241,6 +241,7 @@ const el = {
     boardZone: document.getElementById('board-zone'),
     boardGhost: document.getElementById('board-ghost'),
     newBatchBtn: document.getElementById('new-batch-btn'),
+    sortTrayBtn: document.getElementById('sort-tray-btn'),
     autoSolveBtn: document.getElementById('auto-solve-btn'),
     backToConfigBtn: document.getElementById('back-to-config-btn'),
     creditFooter: document.getElementById('credit-footer')
@@ -498,6 +499,61 @@ function scatterTray() {
     });
 }
 
+function isEdgePiece(puzzle, piece) {
+    return piece.r === 0 || piece.r === puzzle.rows - 1 || piece.c === 0 || piece.c === puzzle.cols - 1;
+}
+
+function sortTray() {
+    const puzzle = state.puzzle;
+    if (!puzzle) return;
+    const trayPieces = puzzle.pieces.filter(p => p.status === 'tray');
+    if (trayPieces.length === 0) return;
+
+    const offsets = getStageOffsets();
+    const margin = 8, gap = 4, groupGap = 16, minStep = 16;
+    const pieceW = trayPieces[0].w, pieceH = trayPieces[0].h;
+    const cols = Math.max(1, Math.floor((offsets.tray.w - margin * 2 + gap) / (pieceW + gap)));
+
+    const edgePieces = trayPieces.filter(p => isEdgePiece(puzzle, p));
+    const innerPieces = trayPieces.filter(p => !isEdgePiece(puzzle, p));
+
+    const rowsEdge = Math.ceil(edgePieces.length / cols) || 0;
+    const rowsInner = Math.ceil(innerPieces.length / cols) || 0;
+    const totalRows = rowsEdge + rowsInner;
+    const hasBothGroups = rowsEdge > 0 && rowsInner > 0;
+
+    // Falls das normale Raster (Kantenhoehe + Abstand) nicht in den Tisch passt,
+    // werden die Reihen gestaucht (leichte Ueberlappung wie gestapelte Kartenreihen),
+    // damit stets alle Teile innerhalb der Tisch-Flaeche sichtbar bleiben.
+    const availH = Math.max(pieceH, offsets.tray.h - margin * 2 - (hasBothGroups ? groupGap : 0));
+    const idealStep = pieceH + gap;
+    const stepY = totalRows > 0 ? Math.max(minStep, Math.min(idealStep, availH / totalRows)) : idealStep;
+
+    let y = offsets.tray.y + margin;
+    let z = 1;
+
+    function layoutGroup(pieces) {
+        if (pieces.length === 0) return;
+        pieces.forEach((p, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const left = offsets.tray.x + margin + col * (pieceW + gap);
+            const top = y + row * stepY;
+            p.el.classList.add('snap-anim');
+            p.el.style.left = left + 'px';
+            p.el.style.top = top + 'px';
+            p.el.style.transform = 'rotate(0deg)';
+            p.el.style.zIndex = String(z++);
+        });
+        const rowsUsed = Math.ceil(pieces.length / cols);
+        y += (rowsUsed - 1) * stepY + pieceH;
+    }
+
+    layoutGroup(edgePieces);
+    if (hasBothGroups) y += groupGap;
+    layoutGroup(innerPieces);
+}
+
 /* ---------------------------------------------------------------------
  * Drag & Drop
  * ------------------------------------------------------------------- */
@@ -599,6 +655,7 @@ function stopAutoSolve() {
     el.autoSolveBtn.textContent = '▶ Vorführung';
     el.autoSolveBtn.classList.remove('active');
     el.newBatchBtn.disabled = false;
+    el.sortTrayBtn.disabled = false;
 }
 
 function autoPlacePiece(piece) {
@@ -639,6 +696,7 @@ async function toggleAutoSolve() {
     el.autoSolveBtn.textContent = '■ Stoppen';
     el.autoSolveBtn.classList.add('active');
     el.newBatchBtn.disabled = true;
+    el.sortTrayBtn.disabled = true;
 
     const stepDelay = Math.max(35, Math.min(220, 6000 / remaining.length));
 
@@ -912,6 +970,7 @@ async function init() {
     });
 
     el.newBatchBtn.addEventListener('click', refillTray);
+    el.sortTrayBtn.addEventListener('click', sortTray);
     el.autoSolveBtn.addEventListener('click', toggleAutoSolve);
     el.backToConfigBtn.addEventListener('click', backToConfig);
 

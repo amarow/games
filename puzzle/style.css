@@ -284,6 +284,19 @@ body.in-game .back-link {
 }
 #new-batch-btn:hover { border-color: #00ff00; color: #fff; }
 
+#sort-tray-btn {
+    background: #111;
+    border: 2px solid #555;
+    color: #ccc;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+}
+#sort-tray-btn:hover { border-color: #00ff00; color: #fff; }
+#sort-tray-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 #puzzle-stage {
     position: relative;
     display: flex;
